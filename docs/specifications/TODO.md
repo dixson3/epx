@@ -1,0 +1,25 @@
+# TODO Register
+
+Lightweight deferred items -- ideas, improvements, and follow-ups that don't warrant full beads tracking.
+
+| ID | Description | Priority | Source | Status |
+|:---|:---|:---|:---|:---|
+| TODO-001 | Deduplicate `detect_opf_dir()` function -- currently copied in `extract/mod.rs`, `manipulate/chapter_manage.rs`, and `manipulate/asset_manage.rs`. Extract to a shared utility in `epub/` module. | Low | Codebase analysis | Resolved |
+| TODO-002 | Add EPUB validation against EPUBCheck rules beyond basic structural checks. Current `book validate` only checks metadata presence and spine-manifest integrity. Could add: duplicate IDs, unreferenced resources, invalid media types, missing cover-image. | Medium | plan-01 Phase 5 | Open |
+| TODO-003 | Support DRM-free EPUB decryption (encryption.xml). Currently no handling for encrypted EPUBs -- they will fail silently or produce garbled output. | Low | EPUB format analysis | Open |
+| TODO-004 | Add `--force` flag to `asset remove` to suppress the reference-still-in-use warning and skip the check. | Low | Codebase analysis | Open |
+| TODO-005 | Support multi-level heading restructure in `content headings --restructure`. Currently remapping happens in a single pass per level, which may produce incorrect results when chaining (e.g., h1->h2 and h2->h3 applied sequentially). Consider collecting all headings first, then applying mappings. | Medium | Codebase analysis | Open |
+| TODO-006 | Add Homebrew formula to `dixson3/homebrew-tap` repository. Cargo.toml has `tap = "dixson3/homebrew-tap"` configured but no formula has been published. | Medium | plan-01 Phase 6 | Open |
+| TODO-007 | Add cover image support during extraction and assembly. `EpubMetadata.cover_id` is parsed from OPF but not used during extraction (cover not extracted specially) or assembly (no cover generation). | Medium | Codebase analysis | Open |
+| TODO-008 | Improve XHTML-to-Markdown footnote conversion. Current regex-based approach handles simple `<aside epub:type="footnote">` but may miss complex nested footnotes or multi-paragraph footnotes. | Low | Codebase analysis | Open |
+| TODO-009 | Add `content replace --dry-run` output to show the actual replacement result (before/after diff), not just match count. Currently dry-run only shows matches and count. | Low | Codebase analysis | Open |
+| TODO-010 | Add progress indication for long operations (large EPUBs with many chapters). Currently no progress feedback during extraction or assembly. | Low | UX improvement | Open |
+| TODO-011 | Handle the `custom` metadata HashMap during OPF generation. Currently `EpubMetadata.custom` fields are parsed during import but never written back to OPF XML. | Medium | Codebase analysis | Resolved |
+| TODO-012 | Add integration tests for all manipulation commands (currently only roundtrip and individual resource tests exist). Consider adding CLI-level tests using `assert_cmd` for metadata set/remove, chapter add/remove, content search/replace. | Medium | Test coverage analysis | Open |
+| TODO-013 | Custom metadata round-trip in assembly path. `EpubMetadata.custom` HashMap is parsed during import but `assemble_book()` does not write custom metadata entries back to the generated OPF. Requires updating `write_epub()` OPF generation to emit `<meta>` elements for custom entries. | Medium | Compliance audit (Phase 1) | Open |
+| TODO-014 | Deduplicate `strip_html_tags` helper. The same HTML-stripping function is implemented independently in `extract/html_to_md.rs`, `extract/summary.rs`, and `manipulate/content_edit.rs`. Extract to a shared utility module. | Low | Compliance audit (Phase 2) | Open |
+| TODO-015 | Deduplicate `find_resource_key` helper. The resource-key lookup function is duplicated in `manipulate/chapter_manage.rs` and `manipulate/asset_manage.rs`. Extract to a shared utility module. | Low | Compliance audit (Phase 2) | Open |
+| TODO-016 | Deduplicate `build_nav_tree` helper. The navigation tree builder is duplicated in `epub/writer.rs` and `manipulate/toc_edit.rs`. Extract to a shared utility module or the `epub/navigation.rs` module. | Low | Compliance audit (Phase 2) | Open |
+| TODO-017 | Implement `--verbose` and `--quiet` CLI flags (REQ-012). The flags are defined in the CLI parser and accepted as arguments but have no effect on output behavior. Wire them into logging or output filtering. | Medium | Compliance audit (Phase 3) | Open |
+| TODO-018 | Remove dead `EpxError` variants. Several error enum variants in `error.rs` are defined but never constructed anywhere in the codebase. Audit and remove unused variants to reduce dead code. | Low | Compliance audit (Phase 3) | Open |
+| TODO-019 | Fix cargo-dist configuration mismatch. The `[workspace.metadata.dist]` section references `installers = ["shell", "homebrew"]` and `tap = "dixson3/homebrew-tap"`, but no Homebrew formula has been published and cargo-dist is not yet configured in CI. Remove the section until distribution is ready. | Medium | Compliance audit (Phase 5d) | Open |

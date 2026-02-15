@@ -1,0 +1,28 @@
+---
+source: src/epub/writer.rs
+expression: opf
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="uid">urn:uuid:12345</dc:identifier>
+    <dc:title>Test Title</dc:title>
+    <dc:language>en</dc:language>
+    <dc:creator>Test Author</dc:creator>
+    <dc:publisher>Test Publisher</dc:publisher>
+    <dc:description>A test description</dc:description>
+    <dc:subject>Fiction</dc:subject>
+    <dc:rights>CC-BY</dc:rights>
+    <dc:date>2024-01-01</dc:date>
+    <meta property="dcterms:modified">2024-01-01T00:00:00Z</meta>
+    <meta property="rendition:layout">reflowable</meta>
+  </metadata>
+  <manifest>
+    <item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="ch1"/>
+  </spine>
+</package>

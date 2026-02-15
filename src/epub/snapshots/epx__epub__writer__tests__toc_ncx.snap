@@ -1,0 +1,21 @@
+---
+source: src/epub/writer.rs
+expression: ncx
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+<head>
+  <meta name="dtb:uid" content="urn:uuid:12345"/>
+</head>
+<docTitle><text>My Book</text></docTitle>
+<navMap>
+<navPoint id="navpoint-1" playOrder="1">
+  <navLabel><text>Chapter 1</text></navLabel>
+  <content src="ch1.xhtml"/>
+</navPoint>
+<navPoint id="navpoint-2" playOrder="2">
+  <navLabel><text>Chapter 2</text></navLabel>
+  <content src="ch2.xhtml"/>
+</navPoint>
+</navMap>
+</ncx>

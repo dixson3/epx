@@ -1,0 +1,36 @@
+[package]
+name = "epx"
+version = "0.1.0"
+edition = "2024"
+description = "A CLI tool for extracting, manipulating, and assembling EPUB files"
+license = "MIT"
+authors = ["James Dixson <dixson3@gmail.com>"]
+repository = "https://github.com/dixson3/epx"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive", "env", "string"] }
+zip = "7.4"
+quick-xml = { version = "0.37", features = ["serialize"] }
+html-to-markdown-rs = "2.24"
+pulldown-cmark = { version = "0.13", features = ["simd"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+thiserror = "2"
+anyhow = "1"
+regex = "1"
+slug = "0.1"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+insta = "1"
+
+# NOTE: [workspace.metadata.dist] section removed -- will be added back when
+# Homebrew distribution is ready (see TODO-019)
+
+[[bin]]
+name = "epx"
+path = "src/main.rs"

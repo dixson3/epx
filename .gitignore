@@ -1,0 +1,9 @@
+# >>> yf-managed >>>
+# Plugin-managed rule symlinks
+.claude/rules/yf/
+# <<< yf-managed <<<
+
+
+# Added by cargo
+
+/target
