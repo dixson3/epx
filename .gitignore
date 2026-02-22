@@ -1,3 +1,5 @@
+_resources/
+
 # >>> yf-managed >>>
 # Plugin-managed rule symlinks
 .claude/rules/yf/
