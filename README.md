@@ -11,7 +11,7 @@ A command-line tool for extracting, manipulating, and assembling EPUB files.
 - **In-place editing** -- modify metadata, chapters, TOC, spine, assets, and content without re-extracting
 - **Atomic writes** -- all modifications use temp-file-and-rename to prevent corruption
 - **Scriptable output** -- all read-only commands support `--json` for machine-parseable output; tables auto-detect TTY vs pipe
-- **Noun-verb CLI** -- intuitive `epx <resource> <action>` pattern (7 resource groups, 30+ commands)
+- **Noun-verb CLI** -- intuitive `epx <resource> <action>` pattern (7 resource groups, 28 commands)
 
 ## Installation
 
@@ -63,16 +63,16 @@ epx book validate book.epub
 epx chapter list book.epub
 
 # Extract a single chapter to Markdown
-epx chapter extract book.epub --id chap01 -o chapter1.md
+epx chapter extract book.epub chap01 -o chapter1.md
 
 # Add a Markdown file as a new chapter
-epx chapter add book.epub --file new-chapter.md --title "New Chapter"
+epx chapter add book.epub new-chapter.md --title "New Chapter"
 
 # Remove a chapter by ID
-epx chapter remove book.epub --id chap03
+epx chapter remove book.epub chap03
 
-# Reorder a chapter to a new position
-epx chapter reorder book.epub --id chap02 --position 1
+# Reorder a chapter (move from position 2 to position 0)
+epx chapter reorder book.epub 2 0
 ```
 
 ### metadata -- metadata operations
@@ -94,7 +94,7 @@ epx metadata remove book.epub --field description
 epx metadata export book.epub -o metadata.yml
 
 # Import metadata from YAML
-epx metadata import book.epub --file metadata.yml
+epx metadata import book.epub metadata.yml
 ```
 
 ### toc -- table of contents
@@ -104,7 +104,7 @@ epx metadata import book.epub --file metadata.yml
 epx toc show book.epub
 
 # Set TOC from a Markdown file
-epx toc set book.epub --file toc.md
+epx toc set book.epub toc.md
 
 # Generate TOC from chapter headings
 epx toc generate book.epub
@@ -116,11 +116,11 @@ epx toc generate book.epub
 # List spine items
 epx spine list book.epub
 
-# Reorder a spine item
-epx spine reorder book.epub --id chap02 --position 0
+# Reorder a spine item (move from position 1 to position 0)
+epx spine reorder book.epub 1 0
 
 # Set spine order from a YAML file
-epx spine set book.epub --file spine.yml
+epx spine set book.epub spine.yml
 ```
 
 ### asset -- images, fonts, and stylesheets
@@ -130,35 +130,35 @@ epx spine set book.epub --file spine.yml
 epx asset list book.epub
 
 # Extract a single asset
-epx asset extract book.epub --id cover.jpg -o cover.jpg
+epx asset extract book.epub cover.jpg -o cover.jpg
 
 # Extract all assets to a directory
 epx asset extract-all book.epub -o ./assets
 
 # Add an asset
-epx asset add book.epub --file logo.png --media-type image/png
+epx asset add book.epub logo.png
 
 # Remove an asset
-epx asset remove book.epub --id old-image.jpg
+epx asset remove book.epub old-image.jpg
 ```
 
 ### content -- search, replace, and headings
 
 ```sh
 # Search for text across all chapters
-epx content search book.epub --pattern "Chapter"
+epx content search book.epub "Chapter"
 
 # Replace text (with regex support)
-epx content replace book.epub --pattern "colour" --replacement "color"
+epx content replace book.epub "colour" "color"
 
 # Dry-run replacement (show matches without modifying)
-epx content replace book.epub --pattern "colour" --replacement "color" --dry-run
+epx content replace book.epub "colour" "color" --dry-run
 
 # List all headings
 epx content headings book.epub
 
-# Restructure heading levels (e.g., shift h1 -> h2)
-epx content headings book.epub --restructure "h1:h2,h2:h3"
+# Restructure heading levels (e.g., shift h2 -> h1)
+epx content headings book.epub --restructure "h2->h1,h3->h2"
 ```
 
 ## License

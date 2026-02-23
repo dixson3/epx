@@ -6,7 +6,7 @@
 
 **Core goals:**
 - Provide a single-binary, zero-external-dependency tool for EPUB workflows
-- Support noun-verb CLI syntax (like `gh`) with 7 resource types and 25+ subcommands
+- Support noun-verb CLI syntax (like `gh`) with 7 resource types and 28 subcommands
 - Extract any EPUB version (2.x/3.x) to a well-structured Markdown directory
 - Assemble Markdown directories into valid EPUB 3.3 packages
 - Enable in-place EPUB manipulation (metadata, chapters, TOC, spine, assets, content)
@@ -21,12 +21,11 @@
   - `zip 7.4` (EPUB ZIP handling)
   - `quick-xml 0.37` (OPF/container.xml/NCX parsing)
   - `html-to-markdown-rs 2.24` (XHTML to Markdown conversion)
-  - `scraper 0.25` (HTML processing)
   - `pulldown-cmark 0.13` with SIMD (Markdown to XHTML)
   - `serde + serde_yaml_ng + serde_json` (metadata serialization)
   - `thiserror 2 + anyhow 1` (error handling)
 - **EPUB constraints:** mimetype must be first ZIP entry (stored, uncompressed); OPF directory varies across EPUBs; EPUB 3 nav.xhtml preferred with NCX fallback
-- **Distribution:** cargo-dist, Homebrew tap (`dixson3/homebrew-tap`), GitHub Actions CI/CD
+- **Distribution:** GitHub Actions CI/CD, GitHub Releases. Homebrew tap (`dixson3/homebrew-tap`) and cargo-dist pending (see TODO-019)
 
 ## 3. Requirement Traceability Matrix
 

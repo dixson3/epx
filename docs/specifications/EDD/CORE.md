@@ -6,7 +6,7 @@
 
 ```
 src/
-  main.rs          # CLI dispatch (584 lines)
+  main.rs          # CLI dispatch (693 lines)
   lib.rs           # Module re-exports
   error.rs         # EpxError enum (thiserror)
   cli/             # CLI definitions (clap derive)
@@ -48,10 +48,10 @@ src/
     toc_edit.rs    # TOC set/generate, spine reorder/set
     content_edit.rs # search, replace, headings, restructure
     asset_manage.rs # add/remove assets
-  util.rs          # (planned) shared utilities: strip_html_tags, find_resource_key, build_nav_tree (see TODO-014..016)
+  util.rs          # Shared utilities: strip_html_tags, find_resource_key, build_nav_tree, format_iso8601, format_iso8601_date
 ```
 
-Total: ~5,800 lines of Rust across 37 source files and 9 test files.
+Total: ~6,800 lines of Rust across 38 source files and 9 test files.
 
 ## Non-Functional Requirements
 
@@ -111,7 +111,7 @@ Total: ~5,800 lines of Rust across 37 source files and 9 test files.
 
 ### DD-007: Error Handling Strategy
 - **Context:** The tool needs clear error messages for CLI users while also supporting library-style error propagation.
-- **Decision:** Two-tier error handling: `EpxError` (thiserror) for domain-specific errors in the `epub` module with typed variants (InvalidEpub, ChapterNotFound, AssetNotFound, etc.), and `anyhow::Result` for all higher-level operations (extract, assemble, manipulate, CLI).
+- **Decision:** Two-tier error handling: `EpxError` (thiserror) for domain-specific errors in the `epub` module with typed variants (InvalidEpub, Xml, Zip, Io, Json, Yaml, Regex), and `anyhow::Result` for all higher-level operations (extract, assemble, manipulate, CLI).
 - **Rationale:** `thiserror` enables pattern matching on error types within the epub layer. `anyhow` provides context chaining (`.with_context()`) for user-facing error messages without boilerplate.
 - **Consequences:** The two error types require conversion at module boundaries. All `EpxError` variants wrap `From` impls for standard library errors (io, xml, zip, json, yaml, regex).
 - **Related:** REQ-011

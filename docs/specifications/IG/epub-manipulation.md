@@ -7,7 +7,7 @@ Manipulation enables in-place editing of EPUB files without full extract/assembl
 ## Use Cases
 
 ### UC-009: Metadata Editing
-- **Actor:** CLI user running `epx metadata set <file> <field> <value>`
+- **Actor:** CLI user running `epx metadata set <file> --field <name> --value <value>`
 - **Preconditions:** Valid EPUB file; writable location
 - **Flow:**
   1. `modify_epub()` reads EPUB into EpubBook
@@ -65,6 +65,6 @@ Manipulation enables in-place editing of EPUB files without full extract/assembl
 ## Implementation Notes
 
 - `modify_epub()` pattern: `|book: &mut EpubBook| -> Result<()>` closure ensures all modifications happen between read and write
-- OPF directory detection is duplicated in `extract/mod.rs`, `manipulate/chapter_manage.rs`, and `manipulate/asset_manage.rs` (same logic: check .opf key suffix, then try common prefixes)
+- OPF directory detection is handled by the shared `EpubBook::detect_opf_dir()` method in `epub/mod.rs`, called from extract, chapter_manage, and asset_manage
 - Asset removal includes reference checking: warns (stderr) if asset href appears in any XHTML content
 - Key files: `src/manipulate/meta_edit.rs`, `src/manipulate/chapter_manage.rs`, `src/manipulate/content_edit.rs`, `src/manipulate/toc_edit.rs`, `src/manipulate/asset_manage.rs`
