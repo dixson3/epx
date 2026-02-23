@@ -1,16 +1,28 @@
 use crate::util::strip_html_tags;
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Convert EPUB XHTML content to Markdown
-pub fn xhtml_to_markdown(xhtml: &str, path_map: &HashMap<String, String>) -> String {
-    let preprocessed = preprocess_xhtml(xhtml, path_map);
+///
+/// `referenced_ids` controls which anchor IDs are preserved:
+/// - Empty set: no anchors preserved (single-chapter extraction without full-book context)
+/// - Non-empty set: only IDs in the set are preserved (full-book extraction)
+pub fn xhtml_to_markdown(
+    xhtml: &str,
+    path_map: &HashMap<String, String>,
+    referenced_ids: &HashSet<String>,
+) -> String {
+    let preprocessed = preprocess_xhtml(xhtml, path_map, referenced_ids);
     let md = html_to_markdown_rs::convert(&preprocessed, None).unwrap_or_default();
     postprocess_markdown(&md)
 }
 
 /// Pre-process EPUB XHTML before Markdown conversion
-fn preprocess_xhtml(xhtml: &str, path_map: &HashMap<String, String>) -> String {
+fn preprocess_xhtml(
+    xhtml: &str,
+    path_map: &HashMap<String, String>,
+    referenced_ids: &HashSet<String>,
+) -> String {
     let mut html = xhtml.to_string();
 
     // Strip XML declaration
@@ -30,19 +42,25 @@ fn preprocess_xhtml(xhtml: &str, path_map: &HashMap<String, String>) -> String {
     // EPUBs use id attributes as fragment targets for cross-references (#id links).
     // The markdown converter drops all id attributes, so we extract them as text tokens
     // that survive conversion and are restored to HTML anchors in postprocessing.
+    //
+    // Only IDs present in `referenced_ids` are preserved. If the set is empty,
+    // no anchors are preserved (single-chapter mode or no references in the EPUB).
 
-    // Step 1a: Replace empty <a id="..."></a> anchors entirely with placeholder text
+    // Step 1a: Empty <a id="..."></a> anchors — preserve if referenced, drop if not
     if let Ok(anchor_re) = Regex::new(r#"<a\s[^>]*id="([^"]+)"[^>]*>\s*</a>"#) {
         html = anchor_re
             .replace_all(&html, |caps: &regex::Captures| {
                 let id = &caps[1];
-                format!("EPXANCHOR__{id}__ENDEPX")
+                if referenced_ids.contains(id) {
+                    format!("EPXANCHOR__{id}__ENDEPX")
+                } else {
+                    String::new()
+                }
             })
             .to_string();
     }
 
-    // Step 1b: For non-empty <a id="...">content</a>, extract the id into a placeholder
-    // and strip the id attribute from the tag (preserving the anchor's href and content)
+    // Step 1b: Non-empty <a id="...">content</a> — preserve id if referenced, strip if not
     if let Ok(anchor_id_re) = Regex::new(r#"(<a\b)([^>]*?)\sid="([^"]+)"([^>]*>)"#) {
         html = anchor_id_re
             .replace_all(&html, |caps: &regex::Captures| {
@@ -50,26 +68,30 @@ fn preprocess_xhtml(xhtml: &str, path_map: &HashMap<String, String>) -> String {
                 let before = &caps[2];
                 let id = &caps[3];
                 let after = &caps[4];
-                format!("EPXANCHOR__{id}__ENDEPX{tag_start}{before}{after}")
+                if referenced_ids.contains(id) {
+                    format!("EPXANCHOR__{id}__ENDEPX{tag_start}{before}{after}")
+                } else {
+                    format!("{tag_start}{before}{after}")
+                }
             })
             .to_string();
     }
 
-    // Step 2: For remaining elements with id attributes (not already converted to
-    // placeholders above), inject a placeholder after the opening tag.
-    // Only targets navigation-target elements (p, h1-h6, section, li); skips
-    // styling/container elements (div, span, b, em) whose IDs are typically
-    // Calibre internal tracking and never referenced as fragment targets.
+    // Step 2: Element IDs (p, h1-h6, section, article, li) — preserve if referenced
     if let Ok(elem_id_re) =
         Regex::new(r#"(<(?:p|h[1-6]|section|article|li)\b)([^>]*?)\sid="([^"]+)"([^>]*>)"#)
     {
         html = elem_id_re
             .replace_all(&html, |caps: &regex::Captures| {
-                let tag_start = &caps[1]; // e.g. "<p"
-                let before = &caps[2]; // attrs before id
+                let tag_start = &caps[1];
+                let before = &caps[2];
                 let id = &caps[3];
-                let after = &caps[4]; // attrs after id + ">"
-                format!("{tag_start}{before}{after}EPXANCHOR__{id}__ENDEPX")
+                let after = &caps[4];
+                if referenced_ids.contains(id) {
+                    format!("{tag_start}{before}{after}EPXANCHOR__{id}__ENDEPX")
+                } else {
+                    format!("{tag_start}{before}{after}")
+                }
             })
             .to_string();
     }
@@ -159,10 +181,18 @@ fn postprocess_markdown(md: &str) -> String {
 mod tests {
     use super::*;
 
+    fn empty_refs() -> HashSet<String> {
+        HashSet::new()
+    }
+
+    fn refs_containing(ids: &[&str]) -> HashSet<String> {
+        ids.iter().map(|s| s.to_string()).collect()
+    }
+
     #[test]
     fn test_basic_xhtml_to_markdown() {
         let xhtml = r#"<html><body><h1>Title</h1><p>Text paragraph.</p></body></html>"#;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &empty_refs());
         assert!(
             md.contains("# Title") || md.contains("Title\n="),
             "expected heading in: {md}"
@@ -178,7 +208,7 @@ mod tests {
             "images/foo.png".to_string(),
             "../assets/images/foo.png".to_string(),
         );
-        let md = xhtml_to_markdown(xhtml, &path_map);
+        let md = xhtml_to_markdown(xhtml, &path_map, &empty_refs());
         assert!(
             md.contains("../assets/images/foo.png"),
             "path not rewritten: {md}"
@@ -189,7 +219,7 @@ mod tests {
     fn test_xml_declaration_stripping() {
         let xhtml =
             r#"<?xml version="1.0" encoding="UTF-8"?><html><body><p>Hello</p></body></html>"#;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &empty_refs());
         assert!(!md.contains("<?xml"));
         assert!(md.contains("Hello"));
     }
@@ -197,7 +227,7 @@ mod tests {
     #[test]
     fn test_footnote_conversion() {
         let xhtml = r##"<html><body><p>Text<a epub:type="noteref" href="#fn1">1</a></p><aside epub:type="footnote" id="fn1"><p>A footnote</p></aside></body></html>"##;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &empty_refs());
         assert!(md.contains("[^fn1]"), "footnote ref not found: {md}");
     }
 
@@ -213,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_empty_input() {
-        let md = xhtml_to_markdown("", &HashMap::new());
+        let md = xhtml_to_markdown("", &HashMap::new(), &empty_refs());
         assert_eq!(md, "\n");
     }
 
@@ -226,7 +256,8 @@ mod tests {
     fn test_anchor_id_preservation() {
         let xhtml =
             r#"<html><body><a id="41401"></a><h2>Section Title</h2><p>Content</p></body></html>"#;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let refs = refs_containing(&["41401"]);
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &refs);
         assert!(
             md.contains(r#"<a id="41401"></a>"#),
             "anchor ID not preserved: {md}"
@@ -237,7 +268,8 @@ mod tests {
     #[test]
     fn test_multiple_anchor_ids() {
         let xhtml = r#"<html><body><a id="100"></a><h2>First</h2><a id="200"></a><h2>Second</h2></body></html>"#;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let refs = refs_containing(&["100", "200"]);
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &refs);
         assert!(
             md.contains(r#"<a id="100"></a>"#),
             "first anchor missing: {md}"
@@ -250,9 +282,9 @@ mod tests {
 
     #[test]
     fn test_element_id_preservation() {
-        // IDs on non-anchor elements (e.g. <p id="...">) should also be preserved
         let xhtml = r#"<html><body><p id="abc123" class="toc">Chapter 1</p></body></html>"#;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let refs = refs_containing(&["abc123"]);
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &refs);
         assert!(
             md.contains(r#"<a id="abc123"></a>"#),
             "element ID not preserved: {md}"
@@ -261,9 +293,9 @@ mod tests {
 
     #[test]
     fn test_adjacent_anchor_ids() {
-        // Two consecutive empty anchors (common in Calibre-generated EPUBs)
         let xhtml = r#"<html><body><a id="111"></a><a id="222"></a><h2>Title</h2></body></html>"#;
-        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        let refs = refs_containing(&["111", "222"]);
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &refs);
         assert!(
             md.contains(r#"<a id="111"></a>"#),
             "first adjacent anchor missing: {md}"
@@ -272,5 +304,46 @@ mod tests {
             md.contains(r#"<a id="222"></a>"#),
             "second adjacent anchor missing: {md}"
         );
+    }
+
+    #[test]
+    fn test_unreferenced_anchors_stripped() {
+        // Empty anchors not in referenced set should be dropped entirely
+        let xhtml =
+            r#"<html><body><a id="orphan1"></a><a id="keep"></a><h2>Title</h2></body></html>"#;
+        let refs = refs_containing(&["keep"]);
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &refs);
+        assert!(
+            md.contains(r#"<a id="keep"></a>"#),
+            "referenced anchor missing: {md}"
+        );
+        assert!(
+            !md.contains("orphan1"),
+            "orphaned anchor should be stripped: {md}"
+        );
+    }
+
+    #[test]
+    fn test_unreferenced_element_ids_stripped() {
+        // Element IDs not in referenced set should be stripped (id attr only)
+        let xhtml = r#"<html><body><p id="calibre_pb_1">Content</p></body></html>"#;
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &empty_refs());
+        assert!(
+            !md.contains("calibre_pb_1"),
+            "unreferenced element ID should be stripped: {md}"
+        );
+        assert!(md.contains("Content"));
+    }
+
+    #[test]
+    fn test_empty_refs_preserves_nothing() {
+        // With empty referenced_ids, no anchors should be preserved
+        let xhtml = r#"<html><body><a id="100"></a><p id="200">Text</p></body></html>"#;
+        let md = xhtml_to_markdown(xhtml, &HashMap::new(), &empty_refs());
+        assert!(
+            !md.contains(r#"<a id="#),
+            "no anchors should be preserved with empty refs: {md}"
+        );
+        assert!(md.contains("Text"));
     }
 }
