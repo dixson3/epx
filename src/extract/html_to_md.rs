@@ -20,12 +20,75 @@ fn preprocess_xhtml(xhtml: &str, path_map: &HashMap<String, String>) -> String {
         html = html[end + 2..].to_string();
     }
 
+    // Strip <head> section to prevent the converter from emitting frontmatter
+    // from <title> and <meta> tags (epx generates its own frontmatter from metadata)
+    if let Ok(head_re) = Regex::new("(?is)<head[^>]*>.*?</head>") {
+        html = head_re.replace_all(&html, "").to_string();
+    }
+
+    // Preserve fragment-target IDs as placeholders before the markdown converter strips them.
+    // EPUBs use id attributes as fragment targets for cross-references (#id links).
+    // The markdown converter drops all id attributes, so we extract them as text tokens
+    // that survive conversion and are restored to HTML anchors in postprocessing.
+
+    // Step 1a: Replace empty <a id="..."></a> anchors entirely with placeholder text
+    if let Ok(anchor_re) = Regex::new(r#"<a\s[^>]*id="([^"]+)"[^>]*>\s*</a>"#) {
+        html = anchor_re
+            .replace_all(&html, |caps: &regex::Captures| {
+                let id = &caps[1];
+                format!("EPXANCHOR__{id}__ENDEPX")
+            })
+            .to_string();
+    }
+
+    // Step 1b: For non-empty <a id="...">content</a>, extract the id into a placeholder
+    // and strip the id attribute from the tag (preserving the anchor's href and content)
+    if let Ok(anchor_id_re) = Regex::new(r#"(<a\b)([^>]*?)\sid="([^"]+)"([^>]*>)"#) {
+        html = anchor_id_re
+            .replace_all(&html, |caps: &regex::Captures| {
+                let tag_start = &caps[1];
+                let before = &caps[2];
+                let id = &caps[3];
+                let after = &caps[4];
+                format!("EPXANCHOR__{id}__ENDEPX{tag_start}{before}{after}")
+            })
+            .to_string();
+    }
+
+    // Step 2: For remaining elements with id attributes (not already converted to
+    // placeholders above), inject a placeholder after the opening tag.
+    // Only targets navigation-target elements (p, h1-h6, section, li); skips
+    // styling/container elements (div, span, b, em) whose IDs are typically
+    // Calibre internal tracking and never referenced as fragment targets.
+    if let Ok(elem_id_re) =
+        Regex::new(r#"(<(?:p|h[1-6]|section|article|li)\b)([^>]*?)\sid="([^"]+)"([^>]*>)"#)
+    {
+        html = elem_id_re
+            .replace_all(&html, |caps: &regex::Captures| {
+                let tag_start = &caps[1]; // e.g. "<p"
+                let before = &caps[2]; // attrs before id
+                let id = &caps[3];
+                let after = &caps[4]; // attrs after id + ">"
+                format!("{tag_start}{before}{after}EPXANCHOR__{id}__ENDEPX")
+            })
+            .to_string();
+    }
+
     // Strip epub namespace prefixes from tags
     html = html.replace("epub:", "data-epub-");
 
-    // Rewrite image paths
-    for (old_path, new_path) in path_map {
-        html = html.replace(old_path, new_path);
+    // Rewrite image/asset paths using placeholders to prevent double-replacement
+    // (e.g. replacing "cover.jpeg" inside an already-rewritten "../assets/images/cover.jpeg")
+    let mut path_entries: Vec<_> = path_map.iter().collect();
+    path_entries.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+    let mut placeholders: Vec<(String, String)> = Vec::new();
+    for (i, (old_path, new_path)) in path_entries.iter().enumerate() {
+        let placeholder = format!("\x00EPX_PATH_{i}\x00");
+        html = html.replace(old_path.as_str(), &placeholder);
+        placeholders.push((placeholder, new_path.to_string()));
+    }
+    for (placeholder, new_path) in &placeholders {
+        html = html.replace(placeholder, new_path);
     }
 
     // Convert epub:type footnotes to markdown-style footnote markers
@@ -60,6 +123,18 @@ fn preprocess_xhtml(xhtml: &str, path_map: &HashMap<String, String>) -> String {
 /// Post-process converted Markdown
 fn postprocess_markdown(md: &str) -> String {
     let mut result = md.to_string();
+
+    // Restore anchor ID placeholders as HTML anchor tags.
+    // The placeholder tokens EPXANCHOR_<id>_ENDEPX were inserted during
+    // preprocessing to survive the markdown converter.
+    if let Ok(anchor_re) = Regex::new(r"EPXANCHOR__(.+?)__ENDEPX") {
+        result = anchor_re
+            .replace_all(&result, |caps: &regex::Captures| {
+                let id = &caps[1];
+                format!("<a id=\"{id}\"></a>")
+            })
+            .to_string();
+    }
 
     // Clean excessive blank lines (3+ to 2)
     if let Ok(blank_re) = Regex::new("\\n{3,}") {
@@ -101,11 +176,11 @@ mod tests {
         let mut path_map = HashMap::new();
         path_map.insert(
             "images/foo.png".to_string(),
-            "./assets/images/foo.png".to_string(),
+            "../assets/images/foo.png".to_string(),
         );
         let md = xhtml_to_markdown(xhtml, &path_map);
         assert!(
-            md.contains("./assets/images/foo.png"),
+            md.contains("../assets/images/foo.png"),
             "path not rewritten: {md}"
         );
     }
@@ -145,5 +220,57 @@ mod tests {
     #[test]
     fn test_strip_html_tags() {
         assert_eq!(strip_html_tags("<p>Hello <b>world</b></p>"), "Hello world");
+    }
+
+    #[test]
+    fn test_anchor_id_preservation() {
+        let xhtml =
+            r#"<html><body><a id="41401"></a><h2>Section Title</h2><p>Content</p></body></html>"#;
+        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        assert!(
+            md.contains(r#"<a id="41401"></a>"#),
+            "anchor ID not preserved: {md}"
+        );
+        assert!(md.contains("Section Title"));
+    }
+
+    #[test]
+    fn test_multiple_anchor_ids() {
+        let xhtml = r#"<html><body><a id="100"></a><h2>First</h2><a id="200"></a><h2>Second</h2></body></html>"#;
+        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        assert!(
+            md.contains(r#"<a id="100"></a>"#),
+            "first anchor missing: {md}"
+        );
+        assert!(
+            md.contains(r#"<a id="200"></a>"#),
+            "second anchor missing: {md}"
+        );
+    }
+
+    #[test]
+    fn test_element_id_preservation() {
+        // IDs on non-anchor elements (e.g. <p id="...">) should also be preserved
+        let xhtml = r#"<html><body><p id="abc123" class="toc">Chapter 1</p></body></html>"#;
+        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        assert!(
+            md.contains(r#"<a id="abc123"></a>"#),
+            "element ID not preserved: {md}"
+        );
+    }
+
+    #[test]
+    fn test_adjacent_anchor_ids() {
+        // Two consecutive empty anchors (common in Calibre-generated EPUBs)
+        let xhtml = r#"<html><body><a id="111"></a><a id="222"></a><h2>Title</h2></body></html>"#;
+        let md = xhtml_to_markdown(xhtml, &HashMap::new());
+        assert!(
+            md.contains(r#"<a id="111"></a>"#),
+            "first adjacent anchor missing: {md}"
+        );
+        assert!(
+            md.contains(r#"<a id="222"></a>"#),
+            "second adjacent anchor missing: {md}"
+        );
     }
 }
