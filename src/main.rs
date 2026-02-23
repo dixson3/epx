@@ -101,10 +101,10 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
                         book.metadata.identifiers.join("; ")
                     ));
                 }
-                if output.verbose {
-                    if let Some(ref cover) = book.metadata.cover_id {
-                        output.detail(&format!("Cover:    {cover}"));
-                    }
+                if output.verbose
+                    && let Some(ref cover) = book.metadata.cover_id
+                {
+                    output.detail(&format!("Cover:    {cover}"));
                 }
             }
         }
@@ -150,10 +150,10 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
             })?;
 
             output.status(&format!("Assembled {}", epub_path.display()));
-            if output.verbose {
-                if let Ok(meta) = std::fs::metadata(&epub_path) {
-                    output.detail(&format!("  Size: {}", format_size(meta.len() as usize)));
-                }
+            if output.verbose
+                && let Ok(meta) = std::fs::metadata(&epub_path)
+            {
+                output.detail(&format!("  Size: {}", format_size(meta.len() as usize)));
             }
         }
         BookCommand::Validate { file } => {
