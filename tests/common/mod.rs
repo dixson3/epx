@@ -43,10 +43,7 @@ pub fn create_minimal_book() -> epx::epub::EpubBook {
 </html>"#;
 
     let mut resources = HashMap::new();
-    resources.insert(
-        "OEBPS/chapter1.xhtml".to_string(),
-        xhtml.to_vec(),
-    );
+    resources.insert("OEBPS/chapter1.xhtml".to_string(), xhtml.to_vec());
 
     EpubBook {
         metadata: EpubMetadata {
@@ -96,7 +93,9 @@ pub fn assert_valid_epub(path: &Path) {
     // Read mimetype content
     let mut mimetype = archive.by_name("mimetype").expect("mimetype entry");
     let mut content = String::new();
-    mimetype.read_to_string(&mut content).expect("read mimetype");
+    mimetype
+        .read_to_string(&mut content)
+        .expect("read mimetype");
     assert_eq!(content.trim(), "application/epub+zip");
     drop(mimetype);
 

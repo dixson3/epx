@@ -49,13 +49,7 @@ fn test_content_replace_actual() {
 
     // Perform actual (non-dry-run) replacement
     epx()
-        .args([
-            "content",
-            "replace",
-            copy.to_str().unwrap(),
-            "Alice",
-            "Bob",
-        ])
+        .args(["content", "replace", copy.to_str().unwrap(), "Alice", "Bob"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Replaced"));

@@ -48,7 +48,10 @@ mod tests {
             properties: None,
         }]);
         let map = build_path_map(&book, "");
-        assert_eq!(map.get("images/cover.png"), Some(&"./assets/images/cover.png".to_string()));
+        assert_eq!(
+            map.get("images/cover.png"),
+            Some(&"./assets/images/cover.png".to_string())
+        );
     }
 
     #[test]
@@ -60,7 +63,10 @@ mod tests {
             properties: None,
         }]);
         let map = build_path_map(&book, "");
-        assert_eq!(map.get("styles/main.css"), Some(&"./styles/main.css".to_string()));
+        assert_eq!(
+            map.get("styles/main.css"),
+            Some(&"./styles/main.css".to_string())
+        );
     }
 
     #[test]
@@ -79,11 +85,7 @@ mod tests {
 }
 
 /// Extract all assets from an EPUB to the output directory
-pub fn extract_assets(
-    book: &EpubBook,
-    output_dir: &Path,
-    opf_dir: &str,
-) -> anyhow::Result<()> {
+pub fn extract_assets(book: &EpubBook, output_dir: &Path, opf_dir: &str) -> anyhow::Result<()> {
     let images_dir = output_dir.join("assets").join("images");
     let styles_dir = output_dir.join("styles");
 

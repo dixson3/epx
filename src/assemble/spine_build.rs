@@ -72,11 +72,15 @@ mod tests {
     #[test]
     fn test_parse_summary_flat() {
         let tmp = tempfile::TempDir::new().unwrap();
-        std::fs::write(tmp.path().join("SUMMARY.md"), r#"# Summary
+        std::fs::write(
+            tmp.path().join("SUMMARY.md"),
+            r#"# Summary
 
 - [Chapter 1](chapters/01-intro.md)
 - [Chapter 2](chapters/02-main.md)
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let (order, _nav) = parse_summary(tmp.path()).unwrap();
         assert_eq!(order, vec!["01-intro.md", "02-main.md"]);
@@ -85,12 +89,16 @@ mod tests {
     #[test]
     fn test_parse_summary_nested() {
         let tmp = tempfile::TempDir::new().unwrap();
-        std::fs::write(tmp.path().join("SUMMARY.md"), r#"# Summary
+        std::fs::write(
+            tmp.path().join("SUMMARY.md"),
+            r#"# Summary
 
 - [Part 1](chapters/part1.md)
   - [Chapter 1](chapters/ch1.md)
   - [Chapter 2](chapters/ch2.md)
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let (order, nav) = parse_summary(tmp.path()).unwrap();
         assert_eq!(order.len(), 3);

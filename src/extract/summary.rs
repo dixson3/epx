@@ -14,8 +14,16 @@ mod tests {
     #[test]
     fn test_flat_summary() {
         let toc = vec![
-            NavPoint { label: "Chapter 1".to_string(), href: "ch1.xhtml".to_string(), children: vec![] },
-            NavPoint { label: "Chapter 2".to_string(), href: "ch2.xhtml".to_string(), children: vec![] },
+            NavPoint {
+                label: "Chapter 1".to_string(),
+                href: "ch1.xhtml".to_string(),
+                children: vec![],
+            },
+            NavPoint {
+                label: "Chapter 2".to_string(),
+                href: "ch2.xhtml".to_string(),
+                children: vec![],
+            },
         ];
         let files = vec![
             ("ch1.xhtml".to_string(), "01-chapter-1.md".to_string()),
@@ -29,28 +37,33 @@ mod tests {
 
     #[test]
     fn test_nested_summary() {
-        let toc = vec![
-            NavPoint {
-                label: "Part 1".to_string(),
-                href: "p1.xhtml".to_string(),
-                children: vec![
-                    NavPoint { label: "Ch 1".to_string(), href: "ch1.xhtml".to_string(), children: vec![] },
-                ],
-            },
-        ];
+        let toc = vec![NavPoint {
+            label: "Part 1".to_string(),
+            href: "p1.xhtml".to_string(),
+            children: vec![NavPoint {
+                label: "Ch 1".to_string(),
+                href: "ch1.xhtml".to_string(),
+                children: vec![],
+            }],
+        }];
         let files = vec![
             ("p1.xhtml".to_string(), "00-part-1.md".to_string()),
             ("ch1.xhtml".to_string(), "01-ch-1.md".to_string()),
         ];
         let summary = generate_summary(&toc, &files);
-        assert!(summary.contains("  - [Ch 1]"), "no indented entry: {summary}");
+        assert!(
+            summary.contains("  - [Ch 1]"),
+            "no indented entry: {summary}"
+        );
     }
 
     #[test]
     fn test_missing_chapter_file() {
-        let toc = vec![
-            NavPoint { label: "Missing Chapter".to_string(), href: "missing.xhtml".to_string(), children: vec![] },
-        ];
+        let toc = vec![NavPoint {
+            label: "Missing Chapter".to_string(),
+            href: "missing.xhtml".to_string(),
+            children: vec![],
+        }];
         let files = vec![];
         let summary = generate_summary(&toc, &files);
         assert!(summary.contains("- Missing Chapter"));

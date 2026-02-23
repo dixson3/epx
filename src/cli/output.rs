@@ -64,7 +64,11 @@ impl OutputConfig {
                 .collect::<Vec<_>>()
                 .join("  ");
             println!("{header_line}");
-            let sep: String = widths.iter().map(|w| "-".repeat(*w)).collect::<Vec<_>>().join("  ");
+            let sep: String = widths
+                .iter()
+                .map(|w| "-".repeat(*w))
+                .collect::<Vec<_>>()
+                .join("  ");
             println!("{sep}");
         } else {
             println!("{}", headers.join("\t"));

@@ -2,11 +2,7 @@ use crate::epub::{EpubBook, NavPoint};
 use slug::slugify;
 
 /// Generate chapter filename from TOC, heading, or original filename
-pub fn chapter_filename(
-    index: usize,
-    book: &EpubBook,
-    href: &str,
-) -> String {
+pub fn chapter_filename(index: usize, book: &EpubBook, href: &str) -> String {
     let base_name = if let Some(label) = find_toc_label(&book.navigation.toc, href) {
         slugify(&label)
     } else {
@@ -32,16 +28,21 @@ mod tests {
 
     fn book_with_toc(toc: Vec<NavPoint>) -> EpubBook {
         EpubBook {
-            navigation: Navigation { toc, ..Default::default() },
+            navigation: Navigation {
+                toc,
+                ..Default::default()
+            },
             ..Default::default()
         }
     }
 
     #[test]
     fn test_filename_from_toc_label() {
-        let book = book_with_toc(vec![
-            NavPoint { label: "Introduction".to_string(), href: "ch1.xhtml".to_string(), children: vec![] },
-        ]);
+        let book = book_with_toc(vec![NavPoint {
+            label: "Introduction".to_string(),
+            href: "ch1.xhtml".to_string(),
+            children: vec![],
+        }]);
         let name = chapter_filename(0, &book, "ch1.xhtml");
         assert_eq!(name, "00-introduction.md");
     }
@@ -55,9 +56,11 @@ mod tests {
 
     #[test]
     fn test_filename_empty_slug() {
-        let book = book_with_toc(vec![
-            NavPoint { label: "".to_string(), href: "_.xhtml".to_string(), children: vec![] },
-        ]);
+        let book = book_with_toc(vec![NavPoint {
+            label: "".to_string(),
+            href: "_.xhtml".to_string(),
+            children: vec![],
+        }]);
         // href "_.xhtml" with empty toc label and stem "_" slugs to empty
         let name = chapter_filename(2, &book, "_.xhtml");
         // Falls back to original filename stem slug

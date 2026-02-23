@@ -87,7 +87,9 @@ fn test_toc_set() {
     // Apply the custom TOC
     epx()
         .args([
-            "toc", "set", copy.to_str().unwrap(),
+            "toc",
+            "set",
+            copy.to_str().unwrap(),
             toc_path.to_str().unwrap(),
         ])
         .assert()

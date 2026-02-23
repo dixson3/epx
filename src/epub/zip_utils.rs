@@ -11,9 +11,9 @@ pub fn open_epub(path: &Path) -> Result<ZipArchive<File>> {
 }
 
 pub fn validate_mimetype(archive: &mut ZipArchive<File>) -> Result<()> {
-    let mut mimetype = archive.by_index(0).map_err(|_| {
-        EpxError::InvalidEpub("missing mimetype entry".into())
-    })?;
+    let mut mimetype = archive
+        .by_index(0)
+        .map_err(|_| EpxError::InvalidEpub("missing mimetype entry".into()))?;
 
     if mimetype.name() != "mimetype" {
         return Err(EpxError::InvalidEpub(
@@ -34,9 +34,9 @@ pub fn validate_mimetype(archive: &mut ZipArchive<File>) -> Result<()> {
 }
 
 pub fn read_entry(archive: &mut ZipArchive<File>, name: &str) -> Result<Vec<u8>> {
-    let mut entry = archive.by_name(name).map_err(|_| {
-        EpxError::InvalidEpub(format!("missing entry: {name}"))
-    })?;
+    let mut entry = archive
+        .by_name(name)
+        .map_err(|_| EpxError::InvalidEpub(format!("missing entry: {name}")))?;
     let mut buf = Vec::new();
     entry.read_to_end(&mut buf)?;
     Ok(buf)
@@ -44,9 +44,8 @@ pub fn read_entry(archive: &mut ZipArchive<File>, name: &str) -> Result<Vec<u8>>
 
 pub fn read_entry_string(archive: &mut ZipArchive<File>, name: &str) -> Result<String> {
     let bytes = read_entry(archive, name)?;
-    String::from_utf8(bytes).map_err(|e| {
-        EpxError::InvalidEpub(format!("invalid UTF-8 in {name}: {e}"))
-    })
+    String::from_utf8(bytes)
+        .map_err(|e| EpxError::InvalidEpub(format!("invalid UTF-8 in {name}: {e}")))
 }
 
 pub fn list_entries(archive: &ZipArchive<File>) -> Vec<String> {

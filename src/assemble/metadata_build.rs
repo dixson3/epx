@@ -9,7 +9,9 @@ mod tests {
     #[test]
     fn test_read_metadata_full() {
         let tmp = tempfile::TempDir::new().unwrap();
-        std::fs::write(tmp.path().join("metadata.yml"), r#"
+        std::fs::write(
+            tmp.path().join("metadata.yml"),
+            r#"
 title: Test Book
 creators:
   - Author Name
@@ -23,7 +25,9 @@ description: A description
 subjects:
   - Fiction
 rights: CC-BY
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let meta = read_metadata(tmp.path()).unwrap();
         assert_eq!(meta.titles, vec!["Test Book"]);

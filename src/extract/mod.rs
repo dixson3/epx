@@ -24,10 +24,7 @@ pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
     let mut chapter_files: Vec<(String, String)> = Vec::new();
 
     for (index, spine_item) in book.spine.iter().enumerate() {
-        let manifest_item = book
-            .manifest
-            .iter()
-            .find(|m| m.id == spine_item.idref);
+        let manifest_item = book.manifest.iter().find(|m| m.id == spine_item.idref);
 
         let Some(manifest_item) = manifest_item else {
             continue;
@@ -55,8 +52,7 @@ pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
         }
 
         // Generate chapter filename
-        let chapter_filename =
-            chapter_org::chapter_filename(index, book, &manifest_item.href);
+        let chapter_filename = chapter_org::chapter_filename(index, book, &manifest_item.href);
 
         // Convert XHTML to Markdown
         let md = html_to_md::xhtml_to_markdown(&xhtml, &path_map);
@@ -82,14 +78,10 @@ pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
         &book.metadata,
         &book.navigation.epub_version.to_string(),
     );
-    std::fs::write(
-        output_dir.join("metadata.yml"),
-        meta_yaml.to_yaml()?,
-    )?;
+    std::fs::write(output_dir.join("metadata.yml"), meta_yaml.to_yaml()?)?;
 
     // Generate SUMMARY.md
-    let summary_content =
-        summary::generate_summary(&book.navigation.toc, &chapter_files);
+    let summary_content = summary::generate_summary(&book.navigation.toc, &chapter_files);
     std::fs::write(output_dir.join("SUMMARY.md"), summary_content)?;
 
     // Extract assets
@@ -99,10 +91,7 @@ pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
 }
 
 /// Extract a single chapter by ID or index
-pub fn extract_single_chapter(
-    book: &EpubBook,
-    id_or_index: &str,
-) -> anyhow::Result<String> {
+pub fn extract_single_chapter(book: &EpubBook, id_or_index: &str) -> anyhow::Result<String> {
     let opf_dir = book.detect_opf_dir();
     let path_map = asset_extract::build_path_map(book, &opf_dir);
 
@@ -123,10 +112,7 @@ pub fn extract_single_chapter(
     Ok(html_to_md::xhtml_to_markdown(&xhtml, &path_map))
 }
 
-fn find_chapter(
-    book: &EpubBook,
-    id_or_index: &str,
-) -> anyhow::Result<(epub::ManifestItem, usize)> {
+fn find_chapter(book: &EpubBook, id_or_index: &str) -> anyhow::Result<(epub::ManifestItem, usize)> {
     // Try as index first
     if let Ok(index) = id_or_index.parse::<usize>()
         && let Some(spine_item) = book.spine.get(index)

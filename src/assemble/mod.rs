@@ -22,7 +22,8 @@ pub fn assemble_book(dir: &Path) -> anyhow::Result<EpubBook> {
 
     let mut manifest: Vec<ManifestItem> = Vec::new();
     let mut spine: Vec<SpineItem> = Vec::new();
-    let mut resources: std::collections::HashMap<String, Vec<u8>> = std::collections::HashMap::new();
+    let mut resources: std::collections::HashMap<String, Vec<u8>> =
+        std::collections::HashMap::new();
 
     // Determine stylesheet (check styles/ directory)
     let styles_dir = dir.join("styles");
@@ -75,9 +76,7 @@ pub fn assemble_book(dir: &Path) -> anyhow::Result<EpubBook> {
         let xhtml = md_to_xhtml::markdown_to_xhtml(md_body, &title, css_rel);
 
         // Create XHTML filename
-        let xhtml_name = chapter_file
-            .strip_suffix(".md")
-            .unwrap_or(chapter_file);
+        let xhtml_name = chapter_file.strip_suffix(".md").unwrap_or(chapter_file);
         let xhtml_href = format!("{xhtml_name}.xhtml");
         let item_id = format!("chapter-{index:02}");
 
@@ -151,8 +150,7 @@ fn add_assets_recursive(
     manifest: &mut Vec<ManifestItem>,
     resources: &mut std::collections::HashMap<String, Vec<u8>>,
 ) -> anyhow::Result<()> {
-    let entries = std::fs::read_dir(dir)
-        .with_context(|| format!("reading {}", dir.display()))?;
+    let entries = std::fs::read_dir(dir).with_context(|| format!("reading {}", dir.display()))?;
 
     for entry in entries {
         let entry = entry?;
@@ -166,8 +164,8 @@ fn add_assets_recursive(
             let filename = path.file_name().unwrap().to_string_lossy().to_string();
             let href = format!("{prefix}/{filename}");
             let media_type = asset_embed::infer_media_type(&path);
-            let data = std::fs::read(&path)
-                .with_context(|| format!("reading {}", path.display()))?;
+            let data =
+                std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?;
 
             let id = format!("asset-{}", slug::slugify(&href));
             resources.insert(href.clone(), data);

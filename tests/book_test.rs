@@ -141,7 +141,13 @@ fn test_book_validate_missing_title() {
 
     // Remove the title
     epx()
-        .args(["metadata", "remove", copy.to_str().unwrap(), "--field", "title"])
+        .args([
+            "metadata",
+            "remove",
+            copy.to_str().unwrap(),
+            "--field",
+            "title",
+        ])
         .assert()
         .success();
 
@@ -161,8 +167,8 @@ fn test_book_validate_missing_language() {
     let bad_epub = tmp.path().join("no-lang.epub");
     let file = std::fs::File::create(&bad_epub).unwrap();
     let mut zip = zip::ZipWriter::new(file);
-    let stored = zip::write::SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let stored =
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let deflate = zip::write::SimpleFileOptions::default()
         .compression_method(zip::CompressionMethod::Deflated);
     zip.start_file("mimetype", stored).unwrap();
@@ -172,7 +178,8 @@ fn test_book_validate_missing_language() {
     zip.start_file("OEBPS/content.opf", deflate).unwrap();
     zip.write_all(br#"<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="uid"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="uid">urn:uuid:test</dc:identifier><dc:title>Test</dc:title></metadata><manifest><item id="ch1" href="ch1.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="ch1"/></spine></package>"#).unwrap();
     zip.start_file("OEBPS/ch1.xhtml", deflate).unwrap();
-    zip.write_all(b"<html><body><p>Hello</p></body></html>").unwrap();
+    zip.write_all(b"<html><body><p>Hello</p></body></html>")
+        .unwrap();
     zip.finish().unwrap();
 
     epx()

@@ -8,7 +8,8 @@ pub fn add_asset(
     asset_path: &Path,
     media_type_override: Option<&str>,
 ) -> anyhow::Result<String> {
-    let filename = asset_path.file_name()
+    let filename = asset_path
+        .file_name()
         .ok_or_else(|| anyhow::anyhow!("invalid asset path"))?
         .to_string_lossy()
         .to_string();
@@ -41,7 +42,9 @@ pub fn add_asset(
 /// Remove an asset from an EPUB
 pub fn remove_asset(book: &mut EpubBook, asset_path: &str) -> anyhow::Result<()> {
     // Find in manifest
-    let item = book.manifest.iter()
+    let item = book
+        .manifest
+        .iter()
         .find(|m| m.href == asset_path || m.id == asset_path)
         .cloned()
         .ok_or_else(|| anyhow::anyhow!("asset not found: {asset_path}"))?;
@@ -61,7 +64,10 @@ pub fn remove_asset(book: &mut EpubBook, asset_path: &str) -> anyhow::Result<()>
     }
 
     if referenced {
-        eprintln!("warning: asset {} is still referenced in content", item.href);
+        eprintln!(
+            "warning: asset {} is still referenced in content",
+            item.href
+        );
     }
 
     // Remove from manifest
@@ -88,12 +94,17 @@ mod tests {
         resources.insert("OEBPS/ch1.xhtml".to_string(), xhtml.to_vec());
 
         EpubBook {
-            manifest: vec![
-                ManifestItem { id: "ch1".to_string(), href: "ch1.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
-            ],
-            spine: vec![
-                SpineItem { idref: "ch1".to_string(), linear: true, properties: None },
-            ],
+            manifest: vec![ManifestItem {
+                id: "ch1".to_string(),
+                href: "ch1.xhtml".to_string(),
+                media_type: "application/xhtml+xml".to_string(),
+                properties: None,
+            }],
+            spine: vec![SpineItem {
+                idref: "ch1".to_string(),
+                linear: true,
+                properties: None,
+            }],
             resources,
             ..Default::default()
         }

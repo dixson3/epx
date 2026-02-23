@@ -1,7 +1,7 @@
 use crate::epub::{EpubVersion, ManifestItem, NavPoint, Navigation};
 use crate::error::{EpxError, Result};
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 
 /// Try to parse navigation from manifest items and content.
 /// Prefers EPUB 3 nav.xhtml, falls back to NCX.
@@ -14,8 +14,7 @@ pub fn parse_navigation(
         item.properties
             .as_deref()
             .is_some_and(|p| p.contains("nav"))
-    })
-        && let Some(content) = get_content(&nav_item.href)
+    }) && let Some(content) = get_content(&nav_item.href)
         && let Ok(nav) = parse_nav_xhtml(&content)
     {
         return Ok(Navigation {
@@ -80,8 +79,7 @@ fn parse_nav_xhtml(html: &str) -> Result<Navigation> {
                         current_href.clear();
                         for attr in e.attributes().flatten() {
                             if attr.key.as_ref() == b"href" {
-                                current_href =
-                                    String::from_utf8_lossy(&attr.value).into_owned();
+                                current_href = String::from_utf8_lossy(&attr.value).into_owned();
                             }
                         }
                     }
@@ -169,8 +167,7 @@ fn parse_ncx(xml: &str) -> Result<Vec<NavPoint>> {
                 {
                     for attr in e.attributes().flatten() {
                         if attr.key.as_ref() == b"src" {
-                            current.href =
-                                String::from_utf8_lossy(&attr.value).into_owned();
+                            current.href = String::from_utf8_lossy(&attr.value).into_owned();
                         }
                     }
                 }
@@ -238,7 +235,8 @@ mod tests {
             } else {
                 None
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(nav.toc.len(), 2);
         assert_eq!(nav.toc[0].label, "Chapter 1");
@@ -275,7 +273,8 @@ mod tests {
             } else {
                 None
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(nav.toc.len(), 2);
         assert_eq!(nav.toc[0].label, "Chapter 1");
@@ -326,7 +325,8 @@ mod tests {
             } else {
                 None
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(nav.toc.len(), 1);
         assert_eq!(nav.toc[0].label, "Part 1");
@@ -368,7 +368,8 @@ mod tests {
             } else {
                 None
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(nav.toc[0].label, "From NCX");
     }

@@ -78,9 +78,13 @@ fn test_metadata_custom_roundtrip() {
     // Set a custom metadata field
     epx()
         .args([
-            "metadata", "set", copy.to_str().unwrap(),
-            "--field", "rendition:layout",
-            "--value", "pre-paginated",
+            "metadata",
+            "set",
+            copy.to_str().unwrap(),
+            "--field",
+            "rendition:layout",
+            "--value",
+            "pre-paginated",
         ])
         .assert()
         .success();
@@ -100,9 +104,13 @@ fn test_metadata_date_roundtrip() {
     // Set a date
     epx()
         .args([
-            "metadata", "set", copy.to_str().unwrap(),
-            "--field", "date",
-            "--value", "2024-06-15",
+            "metadata",
+            "set",
+            copy.to_str().unwrap(),
+            "--field",
+            "date",
+            "--value",
+            "2024-06-15",
         ])
         .assert()
         .success();
@@ -124,9 +132,13 @@ fn test_metadata_export() {
     // Set some known metadata first so we have predictable values
     epx()
         .args([
-            "metadata", "set", copy.to_str().unwrap(),
-            "--field", "title",
-            "--value", "Export Test Book",
+            "metadata",
+            "set",
+            copy.to_str().unwrap(),
+            "--field",
+            "title",
+            "--value",
+            "Export Test Book",
         ])
         .assert()
         .success();
@@ -134,18 +146,33 @@ fn test_metadata_export() {
     // Export metadata to YAML
     epx()
         .args([
-            "metadata", "export", copy.to_str().unwrap(),
-            "-o", yaml_path.to_str().unwrap(),
+            "metadata",
+            "export",
+            copy.to_str().unwrap(),
+            "-o",
+            yaml_path.to_str().unwrap(),
         ])
         .assert()
         .success();
 
     // Verify the exported file exists and contains expected fields
     let content = std::fs::read_to_string(&yaml_path).expect("read exported YAML");
-    assert!(content.contains("title:"), "exported YAML should contain 'title:' field");
-    assert!(content.contains("Export Test Book"), "exported YAML should contain the title value");
-    assert!(content.contains("languages:"), "exported YAML should contain 'languages:' field");
-    assert!(content.contains("identifiers:"), "exported YAML should contain 'identifiers:' field");
+    assert!(
+        content.contains("title:"),
+        "exported YAML should contain 'title:' field"
+    );
+    assert!(
+        content.contains("Export Test Book"),
+        "exported YAML should contain the title value"
+    );
+    assert!(
+        content.contains("languages:"),
+        "exported YAML should contain 'languages:' field"
+    );
+    assert!(
+        content.contains("identifiers:"),
+        "exported YAML should contain 'identifiers:' field"
+    );
 }
 
 #[test]
@@ -158,18 +185,26 @@ fn test_metadata_import() {
     // Set distinctive metadata on the source copy
     epx()
         .args([
-            "metadata", "set", src_copy.to_str().unwrap(),
-            "--field", "title",
-            "--value", "Imported Title",
+            "metadata",
+            "set",
+            src_copy.to_str().unwrap(),
+            "--field",
+            "title",
+            "--value",
+            "Imported Title",
         ])
         .assert()
         .success();
 
     epx()
         .args([
-            "metadata", "set", src_copy.to_str().unwrap(),
-            "--field", "creator",
-            "--value", "Import Author",
+            "metadata",
+            "set",
+            src_copy.to_str().unwrap(),
+            "--field",
+            "creator",
+            "--value",
+            "Import Author",
         ])
         .assert()
         .success();
@@ -177,8 +212,11 @@ fn test_metadata_import() {
     // Export metadata from source
     epx()
         .args([
-            "metadata", "export", src_copy.to_str().unwrap(),
-            "-o", yaml_path.to_str().unwrap(),
+            "metadata",
+            "export",
+            src_copy.to_str().unwrap(),
+            "-o",
+            yaml_path.to_str().unwrap(),
         ])
         .assert()
         .success();
@@ -186,7 +224,9 @@ fn test_metadata_import() {
     // Import metadata into destination
     epx()
         .args([
-            "metadata", "import", dst_copy.to_str().unwrap(),
+            "metadata",
+            "import",
+            dst_copy.to_str().unwrap(),
             yaml_path.to_str().unwrap(),
         ])
         .assert()

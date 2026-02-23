@@ -1,5 +1,5 @@
-use crate::epub::{reader, EpubBook, EpubMetadata};
 use crate::epub::writer;
+use crate::epub::{EpubBook, EpubMetadata, reader};
 use std::path::Path;
 
 /// Set a metadata field on an EPUB
@@ -41,7 +41,9 @@ pub fn set_field(book: &mut EpubBook, field: &str, value: &str) -> anyhow::Resul
             book.metadata.subjects.push(value.to_string());
         }
         other => {
-            book.metadata.custom.insert(other.to_string(), value.to_string());
+            book.metadata
+                .custom
+                .insert(other.to_string(), value.to_string());
         }
     }
     Ok(())
@@ -150,7 +152,10 @@ mod tests {
     fn test_set_field_custom() {
         let mut book = test_book();
         set_field(&mut book, "my-custom", "value").unwrap();
-        assert_eq!(book.metadata.custom.get("my-custom"), Some(&"value".to_string()));
+        assert_eq!(
+            book.metadata.custom.get("my-custom"),
+            Some(&"value".to_string())
+        );
     }
 
     #[test]
@@ -184,7 +189,10 @@ mod tests {
 }
 
 /// Read EPUB, modify, write back atomically
-pub fn modify_epub(path: &Path, modify: impl FnOnce(&mut EpubBook) -> anyhow::Result<()>) -> anyhow::Result<()> {
+pub fn modify_epub(
+    path: &Path,
+    modify: impl FnOnce(&mut EpubBook) -> anyhow::Result<()>,
+) -> anyhow::Result<()> {
     let mut book = reader::read_epub(path)?;
     modify(&mut book)?;
     writer::write_epub(&book, path)?;

@@ -18,7 +18,9 @@ pub fn reorder_spine(book: &mut EpubBook, from: usize, to: usize) -> anyhow::Res
 pub fn set_spine_order(book: &mut EpubBook, idrefs: &[String]) -> anyhow::Result<()> {
     let mut new_spine = Vec::new();
     for idref in idrefs {
-        let item = book.spine.iter()
+        let item = book
+            .spine
+            .iter()
             .find(|s| s.idref == *idref)
             .ok_or_else(|| anyhow::anyhow!("spine item not found: {idref}"))?
             .clone();
@@ -77,10 +79,11 @@ pub fn generate_toc(book: &mut EpubBook, max_depth: Option<usize>) -> anyhow::Re
     let heading_re = regex::Regex::new(r"<h([1-6])[^>]*>(.*?)</h[1-6]>")?;
 
     for spine_item in &book.spine {
-        let manifest_item = book.manifest.iter()
-            .find(|m| m.id == spine_item.idref);
+        let manifest_item = book.manifest.iter().find(|m| m.id == spine_item.idref);
 
-        let Some(manifest_item) = manifest_item else { continue };
+        let Some(manifest_item) = manifest_item else {
+            continue;
+        };
         if !manifest_item.media_type.contains("html") {
             continue;
         }
@@ -136,17 +139,43 @@ mod tests {
                 ..Default::default()
             },
             manifest: vec![
-                ManifestItem { id: "ch1".to_string(), href: "ch1.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
-                ManifestItem { id: "ch2".to_string(), href: "ch2.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
+                ManifestItem {
+                    id: "ch1".to_string(),
+                    href: "ch1.xhtml".to_string(),
+                    media_type: "application/xhtml+xml".to_string(),
+                    properties: None,
+                },
+                ManifestItem {
+                    id: "ch2".to_string(),
+                    href: "ch2.xhtml".to_string(),
+                    media_type: "application/xhtml+xml".to_string(),
+                    properties: None,
+                },
             ],
             spine: vec![
-                SpineItem { idref: "ch1".to_string(), linear: true, properties: None },
-                SpineItem { idref: "ch2".to_string(), linear: true, properties: None },
+                SpineItem {
+                    idref: "ch1".to_string(),
+                    linear: true,
+                    properties: None,
+                },
+                SpineItem {
+                    idref: "ch2".to_string(),
+                    linear: true,
+                    properties: None,
+                },
             ],
             navigation: Navigation {
                 toc: vec![
-                    NavPoint { label: "Chapter 1".to_string(), href: "ch1.xhtml".to_string(), children: vec![] },
-                    NavPoint { label: "Chapter 2".to_string(), href: "ch2.xhtml".to_string(), children: vec![] },
+                    NavPoint {
+                        label: "Chapter 1".to_string(),
+                        href: "ch1.xhtml".to_string(),
+                        children: vec![],
+                    },
+                    NavPoint {
+                        label: "Chapter 2".to_string(),
+                        href: "ch2.xhtml".to_string(),
+                        children: vec![],
+                    },
                 ],
                 ..Default::default()
             },

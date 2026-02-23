@@ -1,4 +1,4 @@
-use pulldown_cmark::{html, Options, Parser};
+use pulldown_cmark::{Options, Parser, html};
 
 /// Convert Markdown to EPUB 3.3 XHTML
 pub fn markdown_to_xhtml(md: &str, title: &str, stylesheet: Option<&str>) -> String {

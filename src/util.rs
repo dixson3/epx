@@ -92,8 +92,7 @@ fn now_components() -> (u64, u64, u64, u64, u64, u64) {
     let year_start = (years * 146097) / 400;
     let remaining = days - year_start;
     let year = 1970 + years;
-    let is_leap =
-        (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
+    let is_leap = (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
     let month_days: &[u64] = if is_leap {
         &[31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     } else {

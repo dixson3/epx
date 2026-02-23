@@ -10,7 +10,11 @@ pub mod toc;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(name = "epx", version, about = "Extract, manipulate, and assemble EPUB files")]
+#[command(
+    name = "epx",
+    version,
+    about = "Extract, manipulate, and assemble EPUB files"
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Resource,

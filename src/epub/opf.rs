@@ -1,7 +1,7 @@
 use crate::epub::{EpubMetadata, EpubVersion, ManifestItem, SpineItem};
 use crate::error::{EpxError, Result};
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 
 #[allow(dead_code)]
 pub struct OpfData {
@@ -50,7 +50,8 @@ pub fn parse_opf(xml: &str) -> Result<OpfData> {
                     if local == "meta" {
                         for attr in e.attributes().flatten() {
                             if attr.key.as_ref() == b"property" {
-                                current_meta_property = String::from_utf8_lossy(&attr.value).into_owned();
+                                current_meta_property =
+                                    String::from_utf8_lossy(&attr.value).into_owned();
                             }
                         }
                     }
@@ -76,7 +77,9 @@ pub fn parse_opf(xml: &str) -> Result<OpfData> {
                         "meta" if !current_meta_property.is_empty() => {
                             match current_meta_property.as_str() {
                                 "dcterms:modified" => metadata.modified = Some(text),
-                                _ => { metadata.custom.insert(current_meta_property.clone(), text); }
+                                _ => {
+                                    metadata.custom.insert(current_meta_property.clone(), text);
+                                }
                             }
                         }
                         _ => {}
@@ -104,7 +107,9 @@ pub fn parse_opf(xml: &str) -> Result<OpfData> {
                     for attr in e.attributes().flatten() {
                         match attr.key.as_ref() {
                             b"id" => item.id = String::from_utf8_lossy(&attr.value).into_owned(),
-                            b"href" => item.href = String::from_utf8_lossy(&attr.value).into_owned(),
+                            b"href" => {
+                                item.href = String::from_utf8_lossy(&attr.value).into_owned()
+                            }
                             b"media-type" => {
                                 item.media_type = String::from_utf8_lossy(&attr.value).into_owned()
                             }
@@ -125,12 +130,10 @@ pub fn parse_opf(xml: &str) -> Result<OpfData> {
                     for attr in e.attributes().flatten() {
                         match attr.key.as_ref() {
                             b"idref" => {
-                                spine_item.idref =
-                                    String::from_utf8_lossy(&attr.value).into_owned()
+                                spine_item.idref = String::from_utf8_lossy(&attr.value).into_owned()
                             }
                             b"linear" => {
-                                spine_item.linear =
-                                    String::from_utf8_lossy(&attr.value) != "no"
+                                spine_item.linear = String::from_utf8_lossy(&attr.value) != "no"
                             }
                             b"properties" => {
                                 spine_item.properties =
@@ -146,15 +149,11 @@ pub fn parse_opf(xml: &str) -> Result<OpfData> {
                     let mut content = String::new();
                     for attr in e.attributes().flatten() {
                         match attr.key.as_ref() {
-                            b"name" => {
-                                name = String::from_utf8_lossy(&attr.value).into_owned()
-                            }
+                            b"name" => name = String::from_utf8_lossy(&attr.value).into_owned(),
                             b"content" => {
                                 content = String::from_utf8_lossy(&attr.value).into_owned()
                             }
-                            b"property" => {
-                                name = String::from_utf8_lossy(&attr.value).into_owned()
-                            }
+                            b"property" => name = String::from_utf8_lossy(&attr.value).into_owned(),
                             _ => {}
                         }
                     }
@@ -185,7 +184,12 @@ pub fn parse_opf(xml: &str) -> Result<OpfData> {
 mod tests {
     use super::*;
 
-    fn minimal_opf(version: &str, metadata_extra: &str, manifest_extra: &str, spine_extra: &str) -> String {
+    fn minimal_opf(
+        version: &str,
+        metadata_extra: &str,
+        manifest_extra: &str,
+        spine_extra: &str,
+    ) -> String {
         format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="{version}" unique-identifier="uid">
@@ -259,15 +263,24 @@ mod tests {
 
     #[test]
     fn parse_opf_cover_image_meta() {
-        let opf = minimal_opf("2.0", r#"<meta name="cover" content="cover-image"/>"#, "", "");
+        let opf = minimal_opf(
+            "2.0",
+            r#"<meta name="cover" content="cover-image"/>"#,
+            "",
+            "",
+        );
         let data = parse_opf(&opf).unwrap();
         assert_eq!(data.metadata.cover_id, Some("cover-image".to_string()));
     }
 
     #[test]
     fn parse_opf_manifest_properties() {
-        let opf = minimal_opf("3.0", "",
-            r#"<item id="nav" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>"#, "");
+        let opf = minimal_opf(
+            "3.0",
+            "",
+            r#"<item id="nav" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>"#,
+            "",
+        );
         let data = parse_opf(&opf).unwrap();
         let nav_item = data.manifest.iter().find(|m| m.id == "nav").unwrap();
         assert_eq!(nav_item.properties, Some("nav".to_string()));
@@ -275,16 +288,32 @@ mod tests {
 
     #[test]
     fn parse_opf_modified_timestamp() {
-        let opf = minimal_opf("3.0", r#"<meta property="dcterms:modified">2024-06-15T10:30:00Z</meta>"#, "", "");
+        let opf = minimal_opf(
+            "3.0",
+            r#"<meta property="dcterms:modified">2024-06-15T10:30:00Z</meta>"#,
+            "",
+            "",
+        );
         let data = parse_opf(&opf).unwrap();
-        assert_eq!(data.metadata.modified, Some("2024-06-15T10:30:00Z".to_string()));
+        assert_eq!(
+            data.metadata.modified,
+            Some("2024-06-15T10:30:00Z".to_string())
+        );
     }
 
     #[test]
     fn parse_opf_custom_meta_property() {
-        let opf = minimal_opf("3.0", r#"<meta property="rendition:layout">pre-paginated</meta>"#, "", "");
+        let opf = minimal_opf(
+            "3.0",
+            r#"<meta property="rendition:layout">pre-paginated</meta>"#,
+            "",
+            "",
+        );
         let data = parse_opf(&opf).unwrap();
-        assert_eq!(data.metadata.custom.get("rendition:layout"), Some(&"pre-paginated".to_string()));
+        assert_eq!(
+            data.metadata.custom.get("rendition:layout"),
+            Some(&"pre-paginated".to_string())
+        );
     }
 
     #[test]

@@ -25,7 +25,8 @@ fn format_size(bytes: usize) -> String {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let output = cli::output::OutputConfig::from_global(cli.json, cli.verbose, cli.quiet, cli.no_color);
+    let output =
+        cli::output::OutputConfig::from_global(cli.json, cli.verbose, cli.quiet, cli.no_color);
 
     match cli.command {
         Resource::Book { command } => handle_book(command, &output)?,
@@ -61,7 +62,11 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
                     "assets": book.manifest.len(),
                 });
                 if output.verbose {
-                    info["opf_dir"] = serde_json::json!(if opf_dir.is_empty() { "(root)" } else { &opf_dir });
+                    info["opf_dir"] = serde_json::json!(if opf_dir.is_empty() {
+                        "(root)"
+                    } else {
+                        &opf_dir
+                    });
                     info["total_size_bytes"] = serde_json::json!(total_size);
                     info["identifiers"] = serde_json::json!(book.metadata.identifiers);
                     if let Some(ref cover) = book.metadata.cover_id {
@@ -81,10 +86,20 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
                 println!("Version:  EPUB {}", book.navigation.epub_version);
                 println!("Chapters: {}", book.spine.len());
                 println!("Assets:   {}", book.manifest.len());
-                output.detail(&format!("OPF dir:  {}", if opf_dir.is_empty() { "(root)" } else { &opf_dir }));
+                output.detail(&format!(
+                    "OPF dir:  {}",
+                    if opf_dir.is_empty() {
+                        "(root)"
+                    } else {
+                        &opf_dir
+                    }
+                ));
                 output.detail(&format!("Size:     {}", format_size(total_size)));
                 if output.verbose && !book.metadata.identifiers.is_empty() {
-                    output.detail(&format!("ID:       {}", book.metadata.identifiers.join("; ")));
+                    output.detail(&format!(
+                        "ID:       {}",
+                        book.metadata.identifiers.join("; ")
+                    ));
                 }
                 if output.verbose {
                     if let Some(ref cover) = book.metadata.cover_id {
@@ -93,11 +108,17 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
                 }
             }
         }
-        BookCommand::Extract { file, output: out_dir } => {
+        BookCommand::Extract {
+            file,
+            output: out_dir,
+        } => {
             let book = epub::reader::read_epub(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
 
-            let title = book.metadata.titles.first()
+            let title = book
+                .metadata
+                .titles
+                .first()
                 .map(slug::slugify)
                 .unwrap_or_else(|| "epub-extract".to_string());
             let output_dir = out_dir.unwrap_or_else(|| std::path::PathBuf::from(&title));
@@ -107,18 +128,26 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
                 .with_context(|| format!("extracting to {}", output_dir.display()))?;
 
             output.status(&format!("Extracted to {}", output_dir.display()));
-            output.detail(&format!("  {} chapters, {} manifest entries", book.spine.len(), book.manifest.len()));
+            output.detail(&format!(
+                "  {} chapters, {} manifest entries",
+                book.spine.len(),
+                book.manifest.len()
+            ));
         }
-        BookCommand::Assemble { dir, output: out_file } => {
-            let title = dir.file_name()
+        BookCommand::Assemble {
+            dir,
+            output: out_file,
+        } => {
+            let title = dir
+                .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| "output".to_string());
-            let epub_path = out_file.unwrap_or_else(|| {
-                std::path::PathBuf::from(format!("{title}.epub"))
-            });
+            let epub_path =
+                out_file.unwrap_or_else(|| std::path::PathBuf::from(format!("{title}.epub")));
 
-            assemble::package::package_epub(&dir, &epub_path)
-                .with_context(|| format!("assembling {} to {}", dir.display(), epub_path.display()))?;
+            assemble::package::package_epub(&dir, &epub_path).with_context(|| {
+                format!("assembling {} to {}", dir.display(), epub_path.display())
+            })?;
 
             output.status(&format!("Assembled {}", epub_path.display()));
             if output.verbose {
@@ -147,7 +176,10 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
             // Check spine references exist in manifest
             for spine_item in &book.spine {
                 if !book.manifest.iter().any(|m| m.id == spine_item.idref) {
-                    issues.push(format!("spine references missing manifest item: {}", spine_item.idref));
+                    issues.push(format!(
+                        "spine references missing manifest item: {}",
+                        spine_item.idref
+                    ));
                 }
             }
 
@@ -170,14 +202,20 @@ fn handle_book(command: cli::book::BookCommand, output: &cli::output::OutputConf
                     println!("  - {issue}");
                 }
             }
-            output.detail(&format!("  Checked: metadata, spine references, {} manifest items", book.manifest.len()));
+            output.detail(&format!(
+                "  Checked: metadata, spine references, {} manifest items",
+                book.manifest.len()
+            ));
         }
     }
 
     Ok(())
 }
 
-fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::OutputConfig) -> Result<()> {
+fn handle_chapter(
+    command: cli::chapter::ChapterCommand,
+    output: &cli::output::OutputConfig,
+) -> Result<()> {
     use cli::chapter::ChapterCommand;
 
     match command {
@@ -194,7 +232,11 @@ fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::O
                     .map(|(i, item)| {
                         let manifest_item = book.manifest.iter().find(|m| m.id == item.idref);
                         let href = manifest_item.map_or("-".to_string(), |m| m.href.clone());
-                        let full_path = if opf_dir.is_empty() { href.clone() } else { format!("{opf_dir}{href}") };
+                        let full_path = if opf_dir.is_empty() {
+                            href.clone()
+                        } else {
+                            format!("{opf_dir}{href}")
+                        };
                         let size = book.resources.get(&full_path).map_or(0, |v| v.len());
                         vec![i.to_string(), item.idref.clone(), href, format_size(size)]
                     })
@@ -232,7 +274,11 @@ fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::O
                 }
             }
         }
-        ChapterCommand::Extract { file, id, output: out_file } => {
+        ChapterCommand::Extract {
+            file,
+            id,
+            output: out_file,
+        } => {
             let book = epub::reader::read_epub(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
 
@@ -245,7 +291,12 @@ fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::O
                 print!("{md}");
             }
         }
-        ChapterCommand::Add { file, markdown, after, title } => {
+        ChapterCommand::Add {
+            file,
+            markdown,
+            after,
+            title,
+        } => {
             let out = output;
             manipulate::meta_edit::modify_epub(&file, |book| {
                 let id = manipulate::chapter_manage::add_chapter(
@@ -256,7 +307,8 @@ fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::O
                 )?;
                 out.status(&format!("Added chapter: {id}"));
                 Ok(())
-            }).with_context(|| format!("adding chapter to {}", file.display()))?;
+            })
+            .with_context(|| format!("adding chapter to {}", file.display()))?;
         }
         ChapterCommand::Remove { file, id } => {
             let out = output;
@@ -264,12 +316,14 @@ fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::O
                 let removed = manipulate::chapter_manage::remove_chapter(book, &id)?;
                 out.status(&format!("Removed chapter: {removed}"));
                 Ok(())
-            }).with_context(|| format!("removing chapter from {}", file.display()))?;
+            })
+            .with_context(|| format!("removing chapter from {}", file.display()))?;
         }
         ChapterCommand::Reorder { file, from, to } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::chapter_manage::reorder_chapter(book, from, to)
-            }).with_context(|| format!("reordering chapters in {}", file.display()))?;
+            })
+            .with_context(|| format!("reordering chapters in {}", file.display()))?;
             output.status(&format!("Moved chapter {from} to {to}"));
         }
     }
@@ -277,7 +331,10 @@ fn handle_chapter(command: cli::chapter::ChapterCommand, output: &cli::output::O
     Ok(())
 }
 
-fn handle_metadata(command: cli::metadata::MetadataCommand, output: &cli::output::OutputConfig) -> Result<()> {
+fn handle_metadata(
+    command: cli::metadata::MetadataCommand,
+    output: &cli::output::OutputConfig,
+) -> Result<()> {
     use cli::metadata::MetadataCommand;
 
     match command {
@@ -321,22 +378,28 @@ fn handle_metadata(command: cli::metadata::MetadataCommand, output: &cli::output
         MetadataCommand::Set { file, field, value } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::meta_edit::set_field(book, &field, &value)
-            }).with_context(|| format!("modifying {}", file.display()))?;
+            })
+            .with_context(|| format!("modifying {}", file.display()))?;
             output.status(&format!("Set {field} = {value}"));
         }
         MetadataCommand::Remove { file, field } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::meta_edit::remove_field(book, &field)
-            }).with_context(|| format!("modifying {}", file.display()))?;
+            })
+            .with_context(|| format!("modifying {}", file.display()))?;
             output.status(&format!("Removed {field}"));
         }
         MetadataCommand::Import { file, metadata } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::meta_edit::import_metadata(book, &metadata)
-            }).with_context(|| format!("importing metadata to {}", file.display()))?;
+            })
+            .with_context(|| format!("importing metadata to {}", file.display()))?;
             output.status(&format!("Imported metadata from {}", metadata.display()));
         }
-        MetadataCommand::Export { file, output: out_file } => {
+        MetadataCommand::Export {
+            file,
+            output: out_file,
+        } => {
             let book = epub::reader::read_epub(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
             let yaml_path = out_file.unwrap_or_else(|| std::path::PathBuf::from("metadata.yml"));
@@ -391,13 +454,15 @@ fn handle_toc(command: cli::toc::TocCommand, output: &cli::output::OutputConfig)
             let toc_content = std::fs::read_to_string(&toc)?;
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::toc_edit::set_toc_from_markdown(book, &toc_content)
-            }).with_context(|| format!("setting TOC on {}", file.display()))?;
+            })
+            .with_context(|| format!("setting TOC on {}", file.display()))?;
             output.status(&format!("TOC updated from {}", toc.display()));
         }
         TocCommand::Generate { file, depth } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::toc_edit::generate_toc(book, depth)
-            }).with_context(|| format!("generating TOC for {}", file.display()))?;
+            })
+            .with_context(|| format!("generating TOC for {}", file.display()))?;
             output.status("TOC generated from headings");
         }
     }
@@ -405,7 +470,10 @@ fn handle_toc(command: cli::toc::TocCommand, output: &cli::output::OutputConfig)
     Ok(())
 }
 
-fn handle_spine(command: cli::spine::SpineCommand, output: &cli::output::OutputConfig) -> Result<()> {
+fn handle_spine(
+    command: cli::spine::SpineCommand,
+    output: &cli::output::OutputConfig,
+) -> Result<()> {
     use cli::spine::SpineCommand;
 
     match command {
@@ -439,7 +507,8 @@ fn handle_spine(command: cli::spine::SpineCommand, output: &cli::output::OutputC
         SpineCommand::Reorder { file, from, to } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::toc_edit::reorder_spine(book, from, to)
-            }).with_context(|| format!("reordering spine in {}", file.display()))?;
+            })
+            .with_context(|| format!("reordering spine in {}", file.display()))?;
             output.status(&format!("Moved spine item {from} to {to}"));
         }
         SpineCommand::Set { file, spine } => {
@@ -447,7 +516,8 @@ fn handle_spine(command: cli::spine::SpineCommand, output: &cli::output::OutputC
             let idrefs: Vec<String> = serde_yaml_ng::from_str(&content)?;
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::toc_edit::set_spine_order(book, &idrefs)
-            }).with_context(|| format!("setting spine on {}", file.display()))?;
+            })
+            .with_context(|| format!("setting spine on {}", file.display()))?;
             output.status(&format!("Spine order updated from {}", spine.display()));
         }
     }
@@ -455,7 +525,10 @@ fn handle_spine(command: cli::spine::SpineCommand, output: &cli::output::OutputC
     Ok(())
 }
 
-fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputConfig) -> Result<()> {
+fn handle_asset(
+    command: cli::asset::AssetCommand,
+    output: &cli::output::OutputConfig,
+) -> Result<()> {
     use cli::asset::AssetCommand;
 
     match command {
@@ -489,7 +562,11 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
                 let rows: Vec<Vec<String>> = items
                     .iter()
                     .map(|item| {
-                        let full_path = if opf_dir.is_empty() { item.href.clone() } else { format!("{opf_dir}{}", item.href) };
+                        let full_path = if opf_dir.is_empty() {
+                            item.href.clone()
+                        } else {
+                            format!("{opf_dir}{}", item.href)
+                        };
                         let size = book.resources.get(&full_path).map_or(0, |v| v.len());
                         vec![
                             item.id.clone(),
@@ -504,7 +581,11 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
                     let json: Vec<_> = items
                         .iter()
                         .map(|item| {
-                            let full_path = if opf_dir.is_empty() { item.href.clone() } else { format!("{opf_dir}{}", item.href) };
+                            let full_path = if opf_dir.is_empty() {
+                                item.href.clone()
+                            } else {
+                                format!("{opf_dir}{}", item.href)
+                            };
                             let size = book.resources.get(&full_path).map_or(0, |v| v.len());
                             serde_json::json!({
                                 "id": item.id,
@@ -521,13 +602,7 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
             } else {
                 let rows: Vec<Vec<String>> = items
                     .iter()
-                    .map(|item| {
-                        vec![
-                            item.id.clone(),
-                            item.href.clone(),
-                            item.media_type.clone(),
-                        ]
-                    })
+                    .map(|item| vec![item.id.clone(), item.href.clone(), item.media_type.clone()])
                     .collect();
 
                 if output.json {
@@ -547,11 +622,17 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
                 }
             }
         }
-        AssetCommand::Extract { file, asset_path, output: out_file } => {
+        AssetCommand::Extract {
+            file,
+            asset_path,
+            output: out_file,
+        } => {
             let book = epub::reader::read_epub(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
 
-            let data = book.resources.iter()
+            let data = book
+                .resources
+                .iter()
                 .find(|(k, _)| k.ends_with(&asset_path) || **k == asset_path)
                 .map(|(_, v)| v)
                 .ok_or_else(|| anyhow::anyhow!("asset not found: {asset_path}"))?;
@@ -565,7 +646,10 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
                 std::io::stdout().write_all(data)?;
             }
         }
-        AssetCommand::ExtractAll { file, output: out_dir } => {
+        AssetCommand::ExtractAll {
+            file,
+            output: out_dir,
+        } => {
             let book = epub::reader::read_epub(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
 
@@ -575,22 +659,24 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
             extract::asset_extract::extract_assets(&book, &output_dir, "")?;
             output.status(&format!("Assets extracted to {}", output_dir.display()));
         }
-        AssetCommand::Add { file, asset, media_type } => {
+        AssetCommand::Add {
+            file,
+            asset,
+            media_type,
+        } => {
             let out = output;
             manipulate::meta_edit::modify_epub(&file, |book| {
-                let id = manipulate::asset_manage::add_asset(
-                    book,
-                    &asset,
-                    media_type.as_deref(),
-                )?;
+                let id = manipulate::asset_manage::add_asset(book, &asset, media_type.as_deref())?;
                 out.status(&format!("Added asset: {id}"));
                 Ok(())
-            }).with_context(|| format!("adding asset to {}", file.display()))?;
+            })
+            .with_context(|| format!("adding asset to {}", file.display()))?;
         }
         AssetCommand::Remove { file, asset_path } => {
             manipulate::meta_edit::modify_epub(&file, |book| {
                 manipulate::asset_manage::remove_asset(book, &asset_path)
-            }).with_context(|| format!("removing asset from {}", file.display()))?;
+            })
+            .with_context(|| format!("removing asset from {}", file.display()))?;
             output.status(&format!("Removed asset: {asset_path}"));
         }
     }
@@ -598,29 +684,36 @@ fn handle_asset(command: cli::asset::AssetCommand, output: &cli::output::OutputC
     Ok(())
 }
 
-fn handle_content(command: cli::content::ContentCommand, output: &cli::output::OutputConfig) -> Result<()> {
+fn handle_content(
+    command: cli::content::ContentCommand,
+    output: &cli::output::OutputConfig,
+) -> Result<()> {
     use cli::content::ContentCommand;
     match command {
-        ContentCommand::Search { file, pattern, chapter, regex: use_regex } => {
+        ContentCommand::Search {
+            file,
+            pattern,
+            chapter,
+            regex: use_regex,
+        } => {
             let book = epub::reader::read_epub(&file)
                 .with_context(|| format!("failed to read {}", file.display()))?;
 
-            let matches = manipulate::content_edit::search(
-                &book,
-                &pattern,
-                chapter.as_deref(),
-                use_regex,
-            )?;
+            let matches =
+                manipulate::content_edit::search(&book, &pattern, chapter.as_deref(), use_regex)?;
 
             if output.json {
-                let json: Vec<_> = matches.iter().map(|m| {
-                    serde_json::json!({
-                        "chapter_id": m.chapter_id,
-                        "chapter_href": m.chapter_href,
-                        "line": m.line_number,
-                        "context": m.context,
+                let json: Vec<_> = matches
+                    .iter()
+                    .map(|m| {
+                        serde_json::json!({
+                            "chapter_id": m.chapter_id,
+                            "chapter_href": m.chapter_href,
+                            "line": m.line_number,
+                            "context": m.context,
+                        })
                     })
-                }).collect();
+                    .collect();
                 output.print_json(&json)?;
             } else {
                 for m in &matches {
@@ -629,7 +722,14 @@ fn handle_content(command: cli::content::ContentCommand, output: &cli::output::O
                 output.status(&format!("\n{} match(es) found", matches.len()));
             }
         }
-        ContentCommand::Replace { file, pattern, replacement, chapter, regex: use_regex, dry_run } => {
+        ContentCommand::Replace {
+            file,
+            pattern,
+            replacement,
+            chapter,
+            regex: use_regex,
+            dry_run,
+        } => {
             if dry_run {
                 let book = epub::reader::read_epub(&file)
                     .with_context(|| format!("failed to read {}", file.display()))?;
@@ -654,7 +754,8 @@ fn handle_content(command: cli::content::ContentCommand, output: &cli::output::O
                         use_regex,
                     )?;
                     Ok(())
-                }).with_context(|| format!("replacing in {}", file.display()))?;
+                })
+                .with_context(|| format!("replacing in {}", file.display()))?;
                 output.status(&format!("Replaced {count} occurrence(s)"));
             }
         }
@@ -664,20 +765,24 @@ fn handle_content(command: cli::content::ContentCommand, output: &cli::output::O
                 manipulate::meta_edit::modify_epub(&file, |book| {
                     count = manipulate::content_edit::restructure_headings(book, &mapping)?;
                     Ok(())
-                }).with_context(|| format!("restructuring headings in {}", file.display()))?;
+                })
+                .with_context(|| format!("restructuring headings in {}", file.display()))?;
                 output.status(&format!("Restructured {count} heading(s)"));
             } else {
                 let book = epub::reader::read_epub(&file)
                     .with_context(|| format!("failed to read {}", file.display()))?;
                 let headings = manipulate::content_edit::list_headings(&book)?;
                 if output.json {
-                    let json: Vec<_> = headings.iter().map(|(href, level, text)| {
-                        serde_json::json!({
-                            "href": href,
-                            "level": level,
-                            "text": text,
+                    let json: Vec<_> = headings
+                        .iter()
+                        .map(|(href, level, text)| {
+                            serde_json::json!({
+                                "href": href,
+                                "level": level,
+                                "text": text,
+                            })
                         })
-                    }).collect();
+                        .collect();
                     output.print_json(&json)?;
                 } else {
                     for (href, level, text) in &headings {

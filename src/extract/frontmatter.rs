@@ -35,10 +35,7 @@ impl BookMetadataYaml {
         let mut epx = HashMap::new();
         epx.insert("source_format".to_string(), "epub".to_string());
         epx.insert("epub_version".to_string(), epub_version.to_string());
-        epx.insert(
-            "extracted_date".to_string(),
-            format_iso8601_date(),
-        );
+        epx.insert("extracted_date".to_string(), format_iso8601_date());
 
         Self {
             title: meta.titles.first().cloned(),

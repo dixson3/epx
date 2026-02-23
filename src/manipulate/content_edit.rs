@@ -38,7 +38,9 @@ pub fn search(
         }
 
         let manifest_item = book.manifest.iter().find(|m| m.id == spine_item.idref);
-        let Some(manifest_item) = manifest_item else { continue };
+        let Some(manifest_item) = manifest_item else {
+            continue;
+        };
 
         if !manifest_item.media_type.contains("html") {
             continue;
@@ -101,7 +103,9 @@ pub fn replace(
         }
 
         let manifest_item = book.manifest.iter().find(|m| m.id == spine_item.idref);
-        let Some(manifest_item) = manifest_item else { continue };
+        let Some(manifest_item) = manifest_item else {
+            continue;
+        };
 
         if !manifest_item.media_type.contains("html") {
             continue;
@@ -134,7 +138,9 @@ pub fn list_headings(book: &EpubBook) -> anyhow::Result<Vec<(String, usize, Stri
 
     for spine_item in &book.spine {
         let manifest_item = book.manifest.iter().find(|m| m.id == spine_item.idref);
-        let Some(manifest_item) = manifest_item else { continue };
+        let Some(manifest_item) = manifest_item else {
+            continue;
+        };
 
         if !manifest_item.media_type.contains("html") {
             continue;
@@ -189,8 +195,12 @@ pub fn restructure_headings(book: &mut EpubBook, mapping: &str) -> anyhow::Resul
             let close_re = regex::Regex::new(&format!(r"</h{from}>"))?;
             let count = open_re.find_iter(&modified).count();
             total += count;
-            modified = open_re.replace_all(&modified, format!("<h{to}$1>").as_str()).to_string();
-            modified = close_re.replace_all(&modified, format!("</h{to}>").as_str()).to_string();
+            modified = open_re
+                .replace_all(&modified, format!("<h{to}$1>").as_str())
+                .to_string();
+            modified = close_re
+                .replace_all(&modified, format!("</h{to}>").as_str())
+                .to_string();
         }
 
         if modified != xhtml {
@@ -253,12 +263,30 @@ mod tests {
 
         EpubBook {
             manifest: vec![
-                ManifestItem { id: "ch1".to_string(), href: "ch1.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
-                ManifestItem { id: "ch2".to_string(), href: "ch2.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
+                ManifestItem {
+                    id: "ch1".to_string(),
+                    href: "ch1.xhtml".to_string(),
+                    media_type: "application/xhtml+xml".to_string(),
+                    properties: None,
+                },
+                ManifestItem {
+                    id: "ch2".to_string(),
+                    href: "ch2.xhtml".to_string(),
+                    media_type: "application/xhtml+xml".to_string(),
+                    properties: None,
+                },
             ],
             spine: vec![
-                SpineItem { idref: "ch1".to_string(), linear: true, properties: None },
-                SpineItem { idref: "ch2".to_string(), linear: true, properties: None },
+                SpineItem {
+                    idref: "ch1".to_string(),
+                    linear: true,
+                    properties: None,
+                },
+                SpineItem {
+                    idref: "ch2".to_string(),
+                    linear: true,
+                    properties: None,
+                },
             ],
             resources,
             ..Default::default()
@@ -313,7 +341,10 @@ mod tests {
             "Hi",
         );
         // Tag attribute should be preserved
-        assert!(result.contains("title=\"Hello\""), "tag attr modified: {result}");
+        assert!(
+            result.contains("title=\"Hello\""),
+            "tag attr modified: {result}"
+        );
         assert!(result.contains("Hi world"));
     }
 
@@ -333,7 +364,12 @@ mod tests {
         let count = restructure_headings(&mut book, "h1->h2").unwrap();
         assert!(count >= 1);
         // Verify h1 tags are now h2
-        let key = book.resources.keys().find(|k| k.contains("ch1")).unwrap().clone();
+        let key = book
+            .resources
+            .keys()
+            .find(|k| k.contains("ch1"))
+            .unwrap()
+            .clone();
         let content = String::from_utf8(book.resources[&key].clone()).unwrap();
         assert!(content.contains("<h2>"), "no h2 found: {content}");
         assert!(!content.contains("<h1>"), "h1 still present: {content}");

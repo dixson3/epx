@@ -116,14 +116,16 @@ mod tests {
     #[test]
     fn detect_opf_dir_from_opf_path() {
         let mut book = EpubBook::default();
-        book.resources.insert("OEBPS/content.opf".to_string(), vec![]);
+        book.resources
+            .insert("OEBPS/content.opf".to_string(), vec![]);
         assert_eq!(book.detect_opf_dir(), "OEBPS/");
     }
 
     #[test]
     fn detect_opf_dir_fallback_prefix() {
         let mut book = EpubBook::default();
-        book.resources.insert("OPS/chapter1.xhtml".to_string(), vec![]);
+        book.resources
+            .insert("OPS/chapter1.xhtml".to_string(), vec![]);
         assert_eq!(book.detect_opf_dir(), "OPS/");
     }
 

@@ -1,6 +1,6 @@
 use crate::error::{EpxError, Result};
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 
 /// Parse META-INF/container.xml to find the OPF rootfile path
 pub fn parse_container(xml: &str) -> Result<String> {
@@ -26,7 +26,9 @@ pub fn parse_container(xml: &str) -> Result<String> {
         buf.clear();
     }
 
-    Err(EpxError::InvalidEpub("no rootfile found in container.xml".into()))
+    Err(EpxError::InvalidEpub(
+        "no rootfile found in container.xml".into(),
+    ))
 }
 
 #[cfg(test)]

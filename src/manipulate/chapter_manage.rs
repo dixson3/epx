@@ -11,20 +11,19 @@ pub fn add_chapter(
 ) -> anyhow::Result<String> {
     let md_content = std::fs::read_to_string(md_path)?;
 
-    let chapter_title = title
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| {
-            // Try to get title from first heading
-            for line in md_content.lines() {
-                let trimmed = line.trim();
-                if let Some(heading) = trimmed.strip_prefix("# ") {
-                    return heading.trim().to_string();
-                }
+    let chapter_title = title.map(|s| s.to_string()).unwrap_or_else(|| {
+        // Try to get title from first heading
+        for line in md_content.lines() {
+            let trimmed = line.trim();
+            if let Some(heading) = trimmed.strip_prefix("# ") {
+                return heading.trim().to_string();
             }
-            md_path.file_stem()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_else(|| "New Chapter".to_string())
-        });
+        }
+        md_path
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_else(|| "New Chapter".to_string())
+    });
 
     let xhtml = md_to_xhtml::markdown_to_xhtml(&md_content, &chapter_title, None);
 
@@ -90,9 +89,7 @@ pub fn remove_chapter(book: &mut EpubBook, id_or_index: &str) -> anyhow::Result<
     let (spine_idx, idref) = resolve_chapter(book, id_or_index)?;
 
     // Find manifest item
-    let manifest_item = book.manifest.iter()
-        .find(|m| m.id == idref)
-        .cloned();
+    let manifest_item = book.manifest.iter().find(|m| m.id == idref).cloned();
 
     // Remove from spine
     book.spine.remove(spine_idx);
@@ -184,17 +181,43 @@ mod tests {
                 ..Default::default()
             },
             manifest: vec![
-                ManifestItem { id: "ch1".to_string(), href: "ch1.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
-                ManifestItem { id: "ch2".to_string(), href: "ch2.xhtml".to_string(), media_type: "application/xhtml+xml".to_string(), properties: None },
+                ManifestItem {
+                    id: "ch1".to_string(),
+                    href: "ch1.xhtml".to_string(),
+                    media_type: "application/xhtml+xml".to_string(),
+                    properties: None,
+                },
+                ManifestItem {
+                    id: "ch2".to_string(),
+                    href: "ch2.xhtml".to_string(),
+                    media_type: "application/xhtml+xml".to_string(),
+                    properties: None,
+                },
             ],
             spine: vec![
-                SpineItem { idref: "ch1".to_string(), linear: true, properties: None },
-                SpineItem { idref: "ch2".to_string(), linear: true, properties: None },
+                SpineItem {
+                    idref: "ch1".to_string(),
+                    linear: true,
+                    properties: None,
+                },
+                SpineItem {
+                    idref: "ch2".to_string(),
+                    linear: true,
+                    properties: None,
+                },
             ],
             navigation: Navigation {
                 toc: vec![
-                    NavPoint { label: "Chapter 1".to_string(), href: "ch1.xhtml".to_string(), children: vec![] },
-                    NavPoint { label: "Chapter 2".to_string(), href: "ch2.xhtml".to_string(), children: vec![] },
+                    NavPoint {
+                        label: "Chapter 1".to_string(),
+                        href: "ch1.xhtml".to_string(),
+                        children: vec![],
+                    },
+                    NavPoint {
+                        label: "Chapter 2".to_string(),
+                        href: "ch2.xhtml".to_string(),
+                        children: vec![],
+                    },
                 ],
                 ..Default::default()
             },

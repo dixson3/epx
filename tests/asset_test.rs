@@ -140,12 +140,7 @@ fn test_asset_remove() {
 
     // Remove the asset
     epx()
-        .args([
-            "asset",
-            "remove",
-            copy.to_str().unwrap(),
-            "removable.txt",
-        ])
+        .args(["asset", "remove", copy.to_str().unwrap(), "removable.txt"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Removed asset"));

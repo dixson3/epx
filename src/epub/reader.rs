@@ -1,4 +1,4 @@
-use crate::epub::{container, navigation, opf, zip_utils, EpubBook};
+use crate::epub::{EpubBook, container, navigation, opf, zip_utils};
 use crate::error::Result;
 use std::path::Path;
 

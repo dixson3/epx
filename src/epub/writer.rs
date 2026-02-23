@@ -2,8 +2,8 @@ use crate::epub::{EpubBook, NavPoint};
 use crate::util::format_iso8601;
 use std::io::Write;
 use std::path::Path;
-use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
+use zip::write::SimpleFileOptions;
 
 /// Write an EpubBook to an EPUB file with atomic rename
 pub fn write_epub(book: &EpubBook, path: &Path) -> anyhow::Result<()> {
@@ -12,13 +12,11 @@ pub fn write_epub(book: &EpubBook, path: &Path) -> anyhow::Result<()> {
     let mut zip = ZipWriter::new(file);
 
     // 1. mimetype (stored, no compression, first entry)
-    let stored = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     zip.start_file("mimetype", stored)?;
     zip.write_all(b"application/epub+zip")?;
 
-    let deflate = SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let deflate = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
     // 2. META-INF/container.xml
     zip.start_file("META-INF/container.xml", deflate)?;
@@ -37,14 +35,21 @@ pub fn write_epub(book: &EpubBook, path: &Path) -> anyhow::Result<()> {
     zip.start_file(format!("{opf_dir}/toc.xhtml"), deflate)?;
     zip.write_all(toc_xhtml.as_bytes())?;
 
-    let toc_ncx = generate_toc_ncx(&book.navigation.toc, &book.metadata.titles, &book.metadata.identifiers);
+    let toc_ncx = generate_toc_ncx(
+        &book.navigation.toc,
+        &book.metadata.titles,
+        &book.metadata.identifiers,
+    );
     zip.start_file(format!("{opf_dir}/toc.ncx"), deflate)?;
     zip.write_all(toc_ncx.as_bytes())?;
 
     // 6. Write content and assets from resources
     for (path_key, data) in &book.resources {
         // Skip OPF and navigation (already written)
-        if path_key.ends_with(".opf") || path_key.ends_with("toc.xhtml") || path_key.ends_with("toc.ncx") {
+        if path_key.ends_with(".opf")
+            || path_key.ends_with("toc.xhtml")
+            || path_key.ends_with("toc.ncx")
+        {
             continue;
         }
         // Rebase into OEBPS if not already
@@ -71,7 +76,8 @@ fn generate_container_xml() -> String {
   <rootfiles>
     <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>"##.to_string()
+</container>"##
+        .to_string()
 }
 
 fn generate_opf(book: &EpubBook) -> String {
@@ -84,14 +90,22 @@ fn generate_opf(book: &EpubBook) -> String {
 
     for (i, id) in book.metadata.identifiers.iter().enumerate() {
         if i == 0 {
-            opf.push_str(&format!("    <dc:identifier id=\"uid\">{}</dc:identifier>\n", xml_escape(id)));
+            opf.push_str(&format!(
+                "    <dc:identifier id=\"uid\">{}</dc:identifier>\n",
+                xml_escape(id)
+            ));
         } else {
-            opf.push_str(&format!("    <dc:identifier>{}</dc:identifier>\n", xml_escape(id)));
+            opf.push_str(&format!(
+                "    <dc:identifier>{}</dc:identifier>\n",
+                xml_escape(id)
+            ));
         }
     }
     if book.metadata.identifiers.is_empty() {
         let uuid = uuid::Uuid::new_v4();
-        opf.push_str(&format!("    <dc:identifier id=\"uid\">urn:uuid:{uuid}</dc:identifier>\n"));
+        opf.push_str(&format!(
+            "    <dc:identifier id=\"uid\">urn:uuid:{uuid}</dc:identifier>\n"
+        ));
     }
 
     for title in &book.metadata.titles {
@@ -106,23 +120,38 @@ fn generate_opf(book: &EpubBook) -> String {
     }
 
     for creator in &book.metadata.creators {
-        opf.push_str(&format!("    <dc:creator>{}</dc:creator>\n", xml_escape(creator)));
+        opf.push_str(&format!(
+            "    <dc:creator>{}</dc:creator>\n",
+            xml_escape(creator)
+        ));
     }
 
     for publisher in &book.metadata.publishers {
-        opf.push_str(&format!("    <dc:publisher>{}</dc:publisher>\n", xml_escape(publisher)));
+        opf.push_str(&format!(
+            "    <dc:publisher>{}</dc:publisher>\n",
+            xml_escape(publisher)
+        ));
     }
 
     if let Some(ref desc) = book.metadata.description {
-        opf.push_str(&format!("    <dc:description>{}</dc:description>\n", xml_escape(desc)));
+        opf.push_str(&format!(
+            "    <dc:description>{}</dc:description>\n",
+            xml_escape(desc)
+        ));
     }
 
     for subject in &book.metadata.subjects {
-        opf.push_str(&format!("    <dc:subject>{}</dc:subject>\n", xml_escape(subject)));
+        opf.push_str(&format!(
+            "    <dc:subject>{}</dc:subject>\n",
+            xml_escape(subject)
+        ));
     }
 
     if let Some(ref rights) = book.metadata.rights {
-        opf.push_str(&format!("    <dc:rights>{}</dc:rights>\n", xml_escape(rights)));
+        opf.push_str(&format!(
+            "    <dc:rights>{}</dc:rights>\n",
+            xml_escape(rights)
+        ));
     }
 
     for date in &book.metadata.dates {
@@ -143,7 +172,11 @@ fn generate_opf(book: &EpubBook) -> String {
     custom_keys.sort();
     for key in custom_keys {
         let value = &book.metadata.custom[key];
-        opf.push_str(&format!("    <meta property=\"{}\">{}</meta>\n", xml_escape(key), xml_escape(value)));
+        opf.push_str(&format!(
+            "    <meta property=\"{}\">{}</meta>\n",
+            xml_escape(key),
+            xml_escape(value)
+        ));
     }
 
     opf.push_str("  </metadata>\n");
@@ -151,7 +184,9 @@ fn generate_opf(book: &EpubBook) -> String {
     // Manifest
     opf.push_str("  <manifest>\n");
     opf.push_str("    <item id=\"toc\" href=\"toc.xhtml\" media-type=\"application/xhtml+xml\" properties=\"nav\"/>\n");
-    opf.push_str("    <item id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"/>\n");
+    opf.push_str(
+        "    <item id=\"ncx\" href=\"toc.ncx\" media-type=\"application/x-dtbncx+xml\"/>\n",
+    );
 
     for item in &book.manifest {
         let props = if let Some(ref p) = item.properties {
@@ -172,7 +207,10 @@ fn generate_opf(book: &EpubBook) -> String {
     opf.push_str("  <spine toc=\"ncx\">\n");
     for item in &book.spine {
         let linear = if item.linear { "" } else { " linear=\"no\"" };
-        opf.push_str(&format!("    <itemref idref=\"{}\"{linear}/>\n", item.idref));
+        opf.push_str(&format!(
+            "    <itemref idref=\"{}\"{linear}/>\n",
+            item.idref
+        ));
     }
     opf.push_str("  </spine>\n");
 
@@ -226,9 +264,15 @@ fn generate_toc_ncx(toc: &[NavPoint], titles: &[String], identifiers: &[String])
     ncx.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     ncx.push_str("<ncx xmlns=\"http://www.daisy.org/z3986/2005/ncx/\" version=\"2005-1\">\n");
     ncx.push_str("<head>\n");
-    ncx.push_str(&format!("  <meta name=\"dtb:uid\" content=\"{}\"/>\n", xml_escape(uid)));
+    ncx.push_str(&format!(
+        "  <meta name=\"dtb:uid\" content=\"{}\"/>\n",
+        xml_escape(uid)
+    ));
     ncx.push_str("</head>\n");
-    ncx.push_str(&format!("<docTitle><text>{}</text></docTitle>\n", xml_escape(title)));
+    ncx.push_str(&format!(
+        "<docTitle><text>{}</text></docTitle>\n",
+        xml_escape(title)
+    ));
     ncx.push_str("<navMap>\n");
     write_ncx_points(&mut ncx, toc, &mut 1);
     ncx.push_str("</navMap>\n");
@@ -271,7 +315,10 @@ mod tests {
 
     fn test_book() -> EpubBook {
         let mut resources = HashMap::new();
-        resources.insert("OEBPS/ch1.xhtml".to_string(), b"<html><body><h1>Hello</h1></body></html>".to_vec());
+        resources.insert(
+            "OEBPS/ch1.xhtml".to_string(),
+            b"<html><body><h1>Hello</h1></body></html>".to_vec(),
+        );
 
         EpubBook {
             metadata: EpubMetadata {
@@ -343,15 +390,29 @@ mod tests {
     fn test_generate_opf_dates_and_custom() {
         let book = test_book();
         let opf = generate_opf(&book);
-        assert!(opf.contains("<dc:date>2024-01-01</dc:date>"), "missing dc:date");
-        assert!(opf.contains("<meta property=\"rendition:layout\">reflowable</meta>"), "missing custom meta");
+        assert!(
+            opf.contains("<dc:date>2024-01-01</dc:date>"),
+            "missing dc:date"
+        );
+        assert!(
+            opf.contains("<meta property=\"rendition:layout\">reflowable</meta>"),
+            "missing custom meta"
+        );
     }
 
     #[test]
     fn test_generate_toc_xhtml() {
         let toc = vec![
-            NavPoint { label: "Chapter 1".to_string(), href: "ch1.xhtml".to_string(), children: Vec::new() },
-            NavPoint { label: "Chapter 2".to_string(), href: "ch2.xhtml".to_string(), children: Vec::new() },
+            NavPoint {
+                label: "Chapter 1".to_string(),
+                href: "ch1.xhtml".to_string(),
+                children: Vec::new(),
+            },
+            NavPoint {
+                label: "Chapter 2".to_string(),
+                href: "ch2.xhtml".to_string(),
+                children: Vec::new(),
+            },
         ];
         let titles = vec!["My Book".to_string()];
         let html = generate_toc_xhtml(&toc, &titles);
@@ -361,8 +422,16 @@ mod tests {
     #[test]
     fn test_generate_toc_ncx() {
         let toc = vec![
-            NavPoint { label: "Chapter 1".to_string(), href: "ch1.xhtml".to_string(), children: Vec::new() },
-            NavPoint { label: "Chapter 2".to_string(), href: "ch2.xhtml".to_string(), children: Vec::new() },
+            NavPoint {
+                label: "Chapter 1".to_string(),
+                href: "ch1.xhtml".to_string(),
+                children: Vec::new(),
+            },
+            NavPoint {
+                label: "Chapter 2".to_string(),
+                href: "ch2.xhtml".to_string(),
+                children: Vec::new(),
+            },
         ];
         let titles = vec!["My Book".to_string()];
         let ids = vec!["urn:uuid:12345".to_string()];

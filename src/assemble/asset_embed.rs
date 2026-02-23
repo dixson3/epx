@@ -36,12 +36,21 @@ mod tests {
         assert_eq!(infer_media_type(Path::new("style.css")), "text/css");
         assert_eq!(infer_media_type(Path::new("font.woff2")), "font/woff2");
         assert_eq!(infer_media_type(Path::new("font.ttf")), "font/ttf");
-        assert_eq!(infer_media_type(Path::new("chapter.xhtml")), "application/xhtml+xml");
+        assert_eq!(
+            infer_media_type(Path::new("chapter.xhtml")),
+            "application/xhtml+xml"
+        );
     }
 
     #[test]
     fn test_infer_unknown_type() {
-        assert_eq!(infer_media_type(Path::new("file.xyz")), "application/octet-stream");
-        assert_eq!(infer_media_type(Path::new("no_ext")), "application/octet-stream");
+        assert_eq!(
+            infer_media_type(Path::new("file.xyz")),
+            "application/octet-stream"
+        );
+        assert_eq!(
+            infer_media_type(Path::new("no_ext")),
+            "application/octet-stream"
+        );
     }
 }

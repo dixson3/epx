@@ -39,7 +39,8 @@ fn test_spine_set_from_yaml() {
         .output()
         .unwrap();
     let spine_json: Vec<serde_json::Value> = serde_json::from_slice(&output.stdout).unwrap();
-    let idrefs: Vec<String> = spine_json.iter()
+    let idrefs: Vec<String> = spine_json
+        .iter()
         .map(|v| v["idref"].as_str().unwrap().to_string())
         .collect();
 
@@ -50,7 +51,12 @@ fn test_spine_set_from_yaml() {
 
     // Apply the reversed spine
     epx()
-        .args(["spine", "set", copy.to_str().unwrap(), yaml_path.to_str().unwrap()])
+        .args([
+            "spine",
+            "set",
+            copy.to_str().unwrap(),
+            yaml_path.to_str().unwrap(),
+        ])
         .assert()
         .success();
 
@@ -60,7 +66,8 @@ fn test_spine_set_from_yaml() {
         .output()
         .unwrap();
     let spine_json2: Vec<serde_json::Value> = serde_json::from_slice(&output2.stdout).unwrap();
-    let new_idrefs: Vec<String> = spine_json2.iter()
+    let new_idrefs: Vec<String> = spine_json2
+        .iter()
         .map(|v| v["idref"].as_str().unwrap().to_string())
         .collect();
 
@@ -89,10 +96,7 @@ fn test_spine_reorder() {
 
     // Move item from index 0 to index 1
     epx()
-        .args([
-            "spine", "reorder", copy.to_str().unwrap(),
-            "0", "1",
-        ])
+        .args(["spine", "reorder", copy.to_str().unwrap(), "0", "1"])
         .assert()
         .success();
 
