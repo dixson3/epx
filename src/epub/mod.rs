@@ -85,10 +85,12 @@ impl EpubBook {
     /// Checks for a `.opf` file first, then falls back to common prefixes.
     pub fn detect_opf_dir(&self) -> String {
         for key in self.resources.keys() {
-            if key.ends_with(".opf")
-                && let Some(idx) = key.rfind('/')
-            {
-                return format!("{}/", &key[..idx]);
+            if key.ends_with(".opf") {
+                if let Some(idx) = key.rfind('/') {
+                    return format!("{}/", &key[..idx]);
+                }
+                // OPF at root level — no directory prefix
+                return String::new();
             }
         }
         for prefix in &["OEBPS/", "OPS/", "EPUB/", "content/"] {

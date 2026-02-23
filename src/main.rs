@@ -654,9 +654,8 @@ fn handle_asset(
                 .with_context(|| format!("failed to read {}", file.display()))?;
 
             let output_dir = out_dir.unwrap_or_else(|| std::path::PathBuf::from("assets"));
-            let opf_dir = extract::asset_extract::build_path_map(&book, "");
-            let _ = opf_dir; // path_map not needed here
-            extract::asset_extract::extract_assets(&book, &output_dir, "")?;
+            let opf_dir = book.detect_opf_dir();
+            extract::asset_extract::extract_assets(&book, &output_dir, &opf_dir)?;
             output.status(&format!("Assets extracted to {}", output_dir.display()));
         }
         AssetCommand::Add {
