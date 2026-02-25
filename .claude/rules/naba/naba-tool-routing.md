@@ -1,0 +1,1 @@
+../../../../../../.claude/plugins/cache/naba/naba/1.0.0/rules/naba-tool-routing.md
