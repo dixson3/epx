@@ -96,6 +96,7 @@ pub fn export_metadata(book: &EpubBook, yaml_path: &Path) -> anyhow::Result<()> 
     let yaml = crate::extract::frontmatter::BookMetadataYaml::from_epub_metadata(
         &book.metadata,
         &book.navigation.epub_version.to_string(),
+        None,
     );
     std::fs::write(yaml_path, yaml.to_yaml()?)?;
     Ok(())

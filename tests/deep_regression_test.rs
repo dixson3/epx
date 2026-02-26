@@ -85,6 +85,67 @@ fn assert_extraction_structure(dir: &std::path::Path) {
     assert!(summary.exists(), "SUMMARY.md missing");
 }
 
+/// Assert extraction quality: no SVG base64 blobs, no empty alt text,
+/// no raw HTML anchors, metadata contains genre classification.
+fn assert_extraction_quality(dir: &std::path::Path, stem: &str) {
+    let chapters = dir.join("chapters");
+    let mut svg_base64_count = 0;
+    let mut empty_alt_count = 0;
+    let mut raw_html_anchor_count = 0;
+
+    for entry in std::fs::read_dir(&chapters)
+        .expect("read chapters/")
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().map_or(false, |ext| ext == "md"))
+    {
+        let content = std::fs::read_to_string(entry.path()).unwrap_or_default();
+        let filename = entry.file_name().to_string_lossy().to_string();
+
+        // No SVG base64 blobs in markdown
+        if content.contains("data:image/svg+xml;base64") {
+            svg_base64_count += 1;
+            eprintln!("  SVG base64 blob found in {stem}/{filename}");
+        }
+
+        // No empty alt text: ![](path)
+        // Exclude ![]{#id} which is a pandoc span preceded by punctuation `!`
+        for (i, line) in content.lines().enumerate() {
+            if line.contains("![](") {
+                empty_alt_count += 1;
+                eprintln!("  Empty alt text in {stem}/{filename}:{}", i + 1);
+            }
+        }
+
+        // No raw HTML anchors — all anchors should use pandoc syntax
+        for (i, line) in content.lines().enumerate() {
+            if line.contains("<a id=") {
+                raw_html_anchor_count += 1;
+                eprintln!("  Raw HTML anchor in {stem}/{filename}:{}", i + 1);
+            }
+        }
+    }
+
+    assert_eq!(
+        svg_base64_count, 0,
+        "{stem}: found {svg_base64_count} chapters with SVG base64 blobs"
+    );
+    assert_eq!(
+        empty_alt_count, 0,
+        "{stem}: found {empty_alt_count} empty alt texts (![])"
+    );
+    assert_eq!(
+        raw_html_anchor_count, 0,
+        "{stem}: found {raw_html_anchor_count} raw HTML anchors (<a id=) — should use pandoc {{#id}} syntax"
+    );
+
+    // Metadata must contain genre under epx key
+    let metadata = std::fs::read_to_string(dir.join("metadata.yml")).unwrap_or_default();
+    assert!(
+        metadata.contains("genre:"),
+        "{stem}: metadata.yml missing genre classification"
+    );
+}
+
 // ─── Extraction: all EPUBs in _resources/ ────────────────────────
 
 #[test]
@@ -106,6 +167,7 @@ fn deep_extract_all() {
             .success();
 
         assert_extraction_structure(&out);
+        assert_extraction_quality(&out, &stem);
     }
 }
 

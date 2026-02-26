@@ -2,6 +2,7 @@ pub mod asset_extract;
 pub mod chapter_org;
 pub mod frontmatter;
 pub mod html_to_md;
+pub mod profile;
 pub mod summary;
 
 use crate::epub::{self, EpubBook};
@@ -48,18 +49,60 @@ fn collect_referenced_ids(book: &EpubBook, opf_dir: &str) -> HashSet<String> {
     ids
 }
 
+/// Report from link validation
+#[allow(dead_code)]
+pub struct LinkValidationReport {
+    pub warnings: Vec<String>,
+    pub total_links: usize,
+    pub valid_links: usize,
+    pub dangling_fragments: usize,
+    pub missing_files: usize,
+}
+
+/// Slugify a heading string the same way most markdown renderers do:
+/// lowercase, replace spaces with hyphens, strip non-alphanumeric (except hyphens).
+fn slugify_heading(heading: &str) -> String {
+    heading
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
 /// Validate that all markdown links in extracted chapters resolve correctly.
 ///
-/// Scans `chapters/` for `<a id="...">` anchors and `](file.md#fragment)` or
-/// `](#fragment)` link references, then cross-checks that every fragment target
-/// exists. Returns a list of warning strings for any dangling references.
-fn validate_extraction_links(output_dir: &Path) -> Vec<String> {
+/// Scans `chapters/` for anchor IDs in all supported formats:
+/// - Pandoc heading attributes: `## Heading {#id}`
+/// - Pandoc inline spans: `[]{#id}`
+/// - Legacy HTML anchors: `<a id="..."></a>`
+/// - Heading-generated slugs
+///
+/// Cross-checks `](file.md#fragment)` and `](#fragment)` references against
+/// the collected anchor set.
+fn validate_extraction_links(output_dir: &Path) -> LinkValidationReport {
     let chapters_dir = output_dir.join("chapters");
     if !chapters_dir.exists() {
-        return vec![];
+        return LinkValidationReport {
+            warnings: vec![],
+            total_links: 0,
+            valid_links: 0,
+            dangling_fragments: 0,
+            missing_files: 0,
+        };
     }
 
-    let anchor_re = Regex::new(r#"<a id="([^"]+)"></a>"#).expect("valid regex");
+    // Recognize all anchor formats:
+    // - Legacy HTML: <a id="X"></a>
+    // - Pandoc heading attribute: ## Heading {#X}
+    // - Pandoc inline span: []{#X}
+    let html_anchor_re = Regex::new(r#"<a id="([^"]+)"></a>"#).expect("valid regex");
+    let heading_attr_re = Regex::new(r"(?m)^#{1,6}\s+.+\{#([^}]+)\}\s*$").expect("valid regex");
+    let pandoc_span_re = Regex::new(r"\[\]\{#([^}]+)\}").expect("valid regex");
+    let heading_re = Regex::new(r"(?m)^#{1,6}\s+(.+?)(?:\s*\{#[^}]+\})?\s*$").expect("valid regex");
     // Matches [text](file.md#fragment) and [text](#fragment)
     let link_re = Regex::new(r"\]\(([^)]*#[^)]+)\)").expect("valid regex");
 
@@ -79,19 +122,37 @@ fn validate_extraction_links(output_dir: &Path) -> Vec<String> {
 
         let content = std::fs::read_to_string(entry.path()).unwrap_or_default();
         let mut ids = HashSet::new();
-        for cap in anchor_re.captures_iter(&content) {
+        // Legacy HTML anchors (for backward compat)
+        for cap in html_anchor_re.captures_iter(&content) {
             ids.insert(cap[1].to_string());
+        }
+        // Pandoc heading attributes: ## Heading {#id}
+        for cap in heading_attr_re.captures_iter(&content) {
+            ids.insert(cap[1].to_string());
+        }
+        // Pandoc inline spans: []{#id}
+        for cap in pandoc_span_re.captures_iter(&content) {
+            ids.insert(cap[1].to_string());
+        }
+        // Also collect heading-generated slugs as valid anchor targets
+        for cap in heading_re.captures_iter(&content) {
+            ids.insert(slugify_heading(&cap[1]));
         }
         anchors.insert(filename, ids);
     }
 
-    // Check all links
     let mut warnings = Vec::new();
+    let mut total_links = 0usize;
+    let mut valid_links = 0usize;
+    let mut dangling_fragments = 0usize;
+    let mut missing_files = 0usize;
+
     for entry in &entries {
         let filename = entry.file_name().to_string_lossy().to_string();
         let content = std::fs::read_to_string(entry.path()).unwrap_or_default();
 
         for cap in link_re.captures_iter(&content) {
+            total_links += 1;
             let link = &cap[1];
             let (target_file, fragment) = if let Some(hash_pos) = link.find('#') {
                 let file_part = &link[..hash_pos];
@@ -102,11 +163,13 @@ fn validate_extraction_links(output_dir: &Path) -> Vec<String> {
                     (file_part.to_string(), frag.to_string())
                 }
             } else {
+                valid_links += 1;
                 continue;
             };
 
             // Check file exists
             if !md_files.contains(&target_file) {
+                missing_files += 1;
                 warnings.push(format!(
                     "{filename}: link to non-existent file '{target_file}'"
                 ));
@@ -117,20 +180,33 @@ fn validate_extraction_links(output_dir: &Path) -> Vec<String> {
             if !fragment.is_empty() {
                 let file_anchors = anchors.get(&target_file);
                 if !file_anchors.is_some_and(|a| a.contains(&fragment)) {
+                    dangling_fragments += 1;
                     warnings.push(format!(
                         "{filename}: dangling fragment '#{fragment}' in '{target_file}'"
                     ));
+                    continue;
                 }
             }
+
+            valid_links += 1;
         }
     }
 
-    warnings
+    LinkValidationReport {
+        warnings,
+        total_links,
+        valid_links,
+        dangling_fragments,
+        missing_files,
+    }
 }
 
 /// Extract a full EPUB to the opinionated directory structure
 pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
     let opf_dir = book.detect_opf_dir();
+
+    // Analyze book structure before extraction
+    let book_profile = profile::analyze_book(book);
 
     // Create directory structure
     let chapters_dir = output_dir.join("chapters");
@@ -207,6 +283,7 @@ pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
     let meta_yaml = frontmatter::BookMetadataYaml::from_epub_metadata(
         &book.metadata,
         &book.navigation.epub_version.to_string(),
+        Some(&book_profile),
     );
     std::fs::write(output_dir.join("metadata.yml"), meta_yaml.to_yaml()?)?;
 
@@ -218,8 +295,8 @@ pub fn extract_book(book: &EpubBook, output_dir: &Path) -> anyhow::Result<()> {
     asset_extract::extract_assets(book, output_dir, &opf_dir)?;
 
     // Post-extraction link validation
-    let warnings = validate_extraction_links(output_dir);
-    for w in &warnings {
+    let report = validate_extraction_links(output_dir);
+    for w in &report.warnings {
         eprintln!("link warning: {w}");
     }
 

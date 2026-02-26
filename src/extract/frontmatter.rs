@@ -1,4 +1,5 @@
 use crate::epub::EpubMetadata;
+use crate::extract::profile::BookProfile;
 use crate::util::format_iso8601_date;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -31,11 +32,29 @@ pub struct BookMetadataYaml {
 }
 
 impl BookMetadataYaml {
-    pub fn from_epub_metadata(meta: &EpubMetadata, epub_version: &str) -> Self {
+    pub fn from_epub_metadata(
+        meta: &EpubMetadata,
+        epub_version: &str,
+        profile: Option<&BookProfile>,
+    ) -> Self {
         let mut epx = HashMap::new();
         epx.insert("source_format".to_string(), "epub".to_string());
         epx.insert("epub_version".to_string(), epub_version.to_string());
         epx.insert("extracted_date".to_string(), format_iso8601_date());
+
+        if let Some(p) = profile {
+            epx.insert("genre".to_string(), p.genre.to_string());
+            epx.insert("image_count".to_string(), p.image_count.to_string());
+            epx.insert(
+                "cross_reference_count".to_string(),
+                p.cross_reference_count.to_string(),
+            );
+            epx.insert(
+                "has_image_gallery".to_string(),
+                p.has_image_gallery.to_string(),
+            );
+            epx.insert("has_svg_cover".to_string(), p.has_svg_cover.to_string());
+        }
 
         Self {
             title: meta.titles.first().cloned(),
@@ -91,7 +110,7 @@ mod tests {
             rights: Some("CC-BY".to_string()),
             ..Default::default()
         };
-        let yaml = BookMetadataYaml::from_epub_metadata(&meta, "3.0");
+        let yaml = BookMetadataYaml::from_epub_metadata(&meta, "3.0", None);
         assert_eq!(yaml.title, Some("My Book".to_string()));
         assert_eq!(yaml.creators, vec!["Author"]);
         assert!(yaml.epx.contains_key("epub_version"));
@@ -104,7 +123,7 @@ mod tests {
             creators: vec!["Author".to_string()],
             ..Default::default()
         };
-        let yaml_obj = BookMetadataYaml::from_epub_metadata(&meta, "3.0");
+        let yaml_obj = BookMetadataYaml::from_epub_metadata(&meta, "3.0", None);
         let yaml = yaml_obj.to_yaml().unwrap();
         assert!(yaml.contains("title:"), "yaml: {yaml}");
         assert!(yaml.contains("creators:"), "yaml: {yaml}");
@@ -126,7 +145,7 @@ mod tests {
     #[test]
     fn test_from_epub_metadata_minimal() {
         let meta = EpubMetadata::default();
-        let yaml = BookMetadataYaml::from_epub_metadata(&meta, "3.0");
+        let yaml = BookMetadataYaml::from_epub_metadata(&meta, "3.0", None);
         assert_eq!(yaml.title, None);
         assert!(yaml.creators.is_empty());
     }
